@@ -1,0 +1,48 @@
+# MetaTrader 5 compiled files
+*.ex5
+*.ex4
+
+# MetaTrader 5 logs
+*.log
+
+# CSV output files
+*.csv
+
+# Temporary files
+*.tmp
+*.temp
+
+# Windows system files
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+*.suo
+*.user
+
+# Backup files
+*.bak
+*.backup
+
+# Test files
+test_*
+*_test.*
+
+# Personal settings
+*.set
+
+# MQL5 cache
+MQL5/
+
+# Tester files
+tester/
+
+# History files
+history/
+
+# Symbols files
+symbols/
+
+# News files
+news/

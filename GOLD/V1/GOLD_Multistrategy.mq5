@@ -12,6 +12,9 @@
 
 #include <Trade/Trade.mqh>
 
+//--- Constants
+#define MAX_STRATEGIES 11  // Number of strategies in StrategyId enum
+
 //--- Input parameters
 // General
 input string Inp_EA_Tag = "XAU_Multi";
@@ -121,6 +124,12 @@ struct TradeMeta {
     double tp_pts;
     datetime open_time;
 
+    // Partial close support
+    ulong parent_ticket;        // Original position ticket (0 if this is the original)
+    int partial_sequence;       // Sequence number for partial closes (0 for original)
+    double original_lots;       // Original position size
+    double remaining_lots;      // Remaining position size after partials
+
     // Strategy identification
     string strategy_name;
     string strategy_short;
@@ -151,6 +160,10 @@ struct TradeMeta {
         sl_pts = 0;
         tp_pts = 0;
         open_time = 0;
+        parent_ticket = 0;
+        partial_sequence = 0;
+        original_lots = 0;
+        remaining_lots = 0;
         strategy_name = "";
         strategy_short = "";
         session = SES_OFF;
@@ -175,6 +188,10 @@ struct TradeMeta {
         sl_pts = other.sl_pts;
         tp_pts = other.tp_pts;
         open_time = other.open_time;
+        parent_ticket = other.parent_ticket;
+        partial_sequence = other.partial_sequence;
+        original_lots = other.original_lots;
+        remaining_lots = other.remaining_lots;
         strategy_name = other.strategy_name;
         strategy_short = other.strategy_short;
         session = other.session;
@@ -275,31 +292,40 @@ bool StoreTradeMeta(ulong ticket, const TradeMeta& meta) {
 
     // Check if ticket already exists (shouldn't happen, but safety check)
     for(int i = 0; i < g_meta_count; i++) {
-        if(g_trade_tickets[i] == ticket) {
+        if(i < ArraySize(g_trade_tickets) && g_trade_tickets[i] == ticket) {
             Print("WARNING: Ticket ", ticket, " already exists in meta storage, updating...");
-            g_trade_metas[i] = meta;
+            if(i < ArraySize(g_trade_metas)) {
+                g_trade_metas[i] = meta;
+            }
             return true;
         }
     }
 
-    // Store new meta
-    g_trade_tickets[g_meta_count] = ticket;
-    g_trade_metas[g_meta_count] = meta;
-    g_meta_count++;
+    // Store new meta with bounds checking
+    if(g_meta_count < ArraySize(g_trade_tickets) && g_meta_count < ArraySize(g_trade_metas)) {
+        g_trade_tickets[g_meta_count] = ticket;
+        g_trade_metas[g_meta_count] = meta;
+        g_meta_count++;
 
-    if(Inp_LogVerbose) {
-        Print("Stored trade meta for ticket ", ticket, " | Strategy: ", meta.strategy_short,
-              " | Session: ", EnumToString(meta.session), " | Count: ", g_meta_count);
+        if(Inp_LogVerbose) {
+            Print("Stored trade meta for ticket ", ticket, " | Strategy: ", meta.strategy_short,
+                  " | Session: ", EnumToString(meta.session), " | Count: ", g_meta_count);
+        }
+        return true;
+    } else {
+        Print("ERROR: Array bounds exceeded in StoreTradeMeta. Count: ", g_meta_count,
+              " | Tickets size: ", ArraySize(g_trade_tickets), " | Metas size: ", ArraySize(g_trade_metas));
+        return false;
     }
-
-    return true;
 }
 
 bool GetTradeMeta(ulong ticket, TradeMeta& meta) {
     for(int i = 0; i < g_meta_count; i++) {
-        if(g_trade_tickets[i] == ticket) {
-            meta = g_trade_metas[i];
-            return true;
+        if(i < ArraySize(g_trade_tickets) && g_trade_tickets[i] == ticket) {
+            if(i < ArraySize(g_trade_metas)) {
+                meta = g_trade_metas[i];
+                return true;
+            }
         }
     }
     return false;
@@ -307,11 +333,15 @@ bool GetTradeMeta(ulong ticket, TradeMeta& meta) {
 
 bool RemoveTradeMeta(ulong ticket) {
     for(int i = 0; i < g_meta_count; i++) {
-        if(g_trade_tickets[i] == ticket) {
-            // Shift remaining elements down
+        if(i < ArraySize(g_trade_tickets) && g_trade_tickets[i] == ticket) {
+            // Shift remaining elements down with bounds checking
             for(int j = i; j < g_meta_count - 1; j++) {
-                g_trade_tickets[j] = g_trade_tickets[j + 1];
-                g_trade_metas[j] = g_trade_metas[j + 1];
+                if(j + 1 < ArraySize(g_trade_tickets) && j < ArraySize(g_trade_tickets)) {
+                    g_trade_tickets[j] = g_trade_tickets[j + 1];
+                }
+                if(j + 1 < ArraySize(g_trade_metas) && j < ArraySize(g_trade_metas)) {
+                    g_trade_metas[j] = g_trade_metas[j + 1];
+                }
             }
             g_meta_count--;
 
@@ -327,6 +357,189 @@ bool RemoveTradeMeta(ulong ticket) {
 
 int GetTradeMetaCount() {
     return g_meta_count;
+}
+
+//--- Exit reason tracking functions
+void StoreExitReason(ulong ticket, string reason) {
+    // Ensure array is properly sized
+    if(ArraySize(g_exit_reasons) <= g_exit_reason_count) {
+        ArrayResize(g_exit_reasons, g_exit_reason_count + 50);
+    }
+
+    // Clean up old entries first (keep only last 50)
+    if(g_exit_reason_count >= MAX_EXIT_REASONS) {
+        int keep_count = 50;
+        for(int i = 0; i < keep_count; i++) {
+            int source_idx = g_exit_reason_count - keep_count + i;
+            if(source_idx >= 0 && source_idx < ArraySize(g_exit_reasons) && i < ArraySize(g_exit_reasons)) {
+                g_exit_reasons[i] = g_exit_reasons[source_idx];
+            }
+        }
+        g_exit_reason_count = keep_count;
+    }
+
+    // Store new exit reason with bounds checking
+    if(g_exit_reason_count < ArraySize(g_exit_reasons)) {
+        g_exit_reasons[g_exit_reason_count].ticket = ticket;
+        g_exit_reasons[g_exit_reason_count].exit_reason = reason;
+        g_exit_reasons[g_exit_reason_count].timestamp = TimeCurrent();
+        g_exit_reason_count++;
+
+        if(Inp_LogVerbose) {
+            Print("Exit reason stored: Ticket ", ticket, " | Reason: ", reason);
+        }
+    } else {
+        Print("ERROR: Cannot store exit reason - array bounds exceeded. Count: ", g_exit_reason_count,
+              " | Array size: ", ArraySize(g_exit_reasons));
+    }
+}
+
+string GetStoredExitReason(ulong ticket) {
+    // Search for the exit reason (most recent first)
+    for(int i = g_exit_reason_count - 1; i >= 0; i--) {
+        if(i < ArraySize(g_exit_reasons) && g_exit_reasons[i].ticket == ticket) {
+            string reason = g_exit_reasons[i].exit_reason;
+
+            // Remove the entry after retrieval to prevent memory buildup
+            for(int j = i; j < g_exit_reason_count - 1; j++) {
+                if(j + 1 < ArraySize(g_exit_reasons) && j < ArraySize(g_exit_reasons)) {
+                    g_exit_reasons[j] = g_exit_reasons[j + 1];
+                }
+            }
+            g_exit_reason_count--;
+
+            return reason;
+        }
+    }
+    return ""; // Not found
+}
+
+void CleanupOldExitReasons() {
+    datetime cutoff = TimeCurrent() - 3600; // Remove entries older than 1 hour
+    int write_pos = 0;
+
+    for(int i = 0; i < g_exit_reason_count; i++) {
+        if(i < ArraySize(g_exit_reasons) && g_exit_reasons[i].timestamp > cutoff) {
+            if(write_pos != i && write_pos < ArraySize(g_exit_reasons)) {
+                g_exit_reasons[write_pos] = g_exit_reasons[i];
+            }
+            write_pos++;
+        }
+    }
+    g_exit_reason_count = write_pos;
+}
+
+//--- Trailing stop tracking functions
+void TrackPositionModification(ulong ticket, double new_sl) {
+    // Ensure array is properly sized
+    if(ArraySize(g_trailing_stops) <= g_trailing_stop_count) {
+        ArrayResize(g_trailing_stops, g_trailing_stop_count + 25);
+    }
+
+    // Find existing entry or create new one
+    int index = -1;
+    for(int i = 0; i < g_trailing_stop_count; i++) {
+        if(i < ArraySize(g_trailing_stops) && g_trailing_stops[i].ticket == ticket) {
+            index = i;
+            break;
+        }
+    }
+
+    if(index == -1) {
+        // Create new entry
+        if(g_trailing_stop_count < MAX_TRAILING_STOPS && g_trailing_stop_count < ArraySize(g_trailing_stops)) {
+            index = g_trailing_stop_count;
+            g_trailing_stop_count++;
+            g_trailing_stops[index].ticket = ticket;
+            g_trailing_stops[index].last_sl = new_sl;
+            g_trailing_stops[index].last_modification = TimeCurrent();
+        } else {
+            Print("WARNING: Cannot add trailing stop - capacity reached or array bounds exceeded");
+        }
+    } else {
+        // Update existing entry
+        if(index < ArraySize(g_trailing_stops)) {
+            g_trailing_stops[index].last_sl = new_sl;
+            g_trailing_stops[index].last_modification = TimeCurrent();
+        }
+    }
+}
+
+bool IsTrailingStopExit(ulong ticket, double exit_price) {
+    for(int i = 0; i < g_trailing_stop_count; i++) {
+        if(i < ArraySize(g_trailing_stops) && g_trailing_stops[i].ticket == ticket) {
+            // Check if exit price is close to last known SL (within 2 points)
+            if(MathAbs(exit_price - g_trailing_stops[i].last_sl) < _Point * 2) {
+                // Remove the entry with bounds checking
+                for(int j = i; j < g_trailing_stop_count - 1; j++) {
+                    if(j + 1 < ArraySize(g_trailing_stops) && j < ArraySize(g_trailing_stops)) {
+                        g_trailing_stops[j] = g_trailing_stops[j + 1];
+                    }
+                }
+                g_trailing_stop_count--;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void CleanupTrailingStops() {
+    datetime cutoff = TimeCurrent() - 7200; // Remove entries older than 2 hours
+    int write_pos = 0;
+
+    for(int i = 0; i < g_trailing_stop_count; i++) {
+        if(i < ArraySize(g_trailing_stops) && g_trailing_stops[i].last_modification > cutoff) {
+            if(write_pos != i && write_pos < ArraySize(g_trailing_stops)) {
+                g_trailing_stops[write_pos] = g_trailing_stops[i];
+            }
+            write_pos++;
+        }
+    }
+    g_trailing_stop_count = write_pos;
+}
+
+//--- Partial close detection and handling functions
+bool IsPartialClose(ulong position_ticket, double deal_volume) {
+    // Check if there's still an open position with the same ticket
+    for(int i = 0; i < PositionsTotal(); i++) {
+        if(PositionSelectByTicket(PositionGetTicket(i))) {
+            if(PositionGetTicket(i) == position_ticket) {
+                double remaining_volume = PositionGetDouble(POSITION_VOLUME);
+                // If there's still volume remaining, this was a partial close
+                return (remaining_volume > 0);
+            }
+        }
+    }
+    return false; // Position fully closed
+}
+
+TradeMeta CreatePartialCloseMeta(const TradeMeta& parent_meta, double closed_lots, int sequence) {
+    TradeMeta partial_meta = parent_meta; // Copy all parent data
+
+    // Update partial close specific fields
+    partial_meta.parent_ticket = (parent_meta.parent_ticket == 0) ? parent_meta.ticket : parent_meta.parent_ticket;
+    partial_meta.partial_sequence = sequence;
+    partial_meta.lots = closed_lots;
+    partial_meta.remaining_lots = parent_meta.remaining_lots - closed_lots;
+
+    return partial_meta;
+}
+
+void UpdateRemainingLots(ulong ticket, double closed_lots) {
+    for(int i = 0; i < g_meta_count; i++) {
+        if(i < ArraySize(g_trade_tickets) && g_trade_tickets[i] == ticket) {
+            if(i < ArraySize(g_trade_metas)) {
+                g_trade_metas[i].remaining_lots -= closed_lots;
+                if(Inp_LogVerbose) {
+                    Print("Updated remaining lots for ticket ", ticket,
+                          " | Closed: ", DoubleToString(closed_lots, 2),
+                          " | Remaining: ", DoubleToString(g_trade_metas[i].remaining_lots, 2));
+                }
+            }
+            break;
+        }
+    }
 }
 
 //--- Helper function to create trade meta with market context
@@ -357,7 +570,116 @@ TradeMeta CreateTradeMeta(StrategyId sid, const IndCache& cache, SessionId sessi
     meta.planned_sl = planned_sl;
     meta.planned_tp = planned_tp;
 
+    // Partial close initialization (for original positions)
+    meta.parent_ticket = 0;         // This is the original position
+    meta.partial_sequence = 0;      // Original position sequence
+    meta.original_lots = lots;      // Store original lot size
+    meta.remaining_lots = lots;     // Initially all lots remain
+
     return meta;
+}
+
+//--- Global Strategy Statistics Functions
+void InitStrategyStats() {
+    for(int i = 0; i < MAX_STRATEGIES; i++) {
+        g_strategy_trades[i] = 0;
+        g_strategy_wins[i] = 0;
+        g_strategy_gross_profit[i] = 0.0;
+        g_strategy_gross_loss[i] = 0.0;
+        g_strategy_net_pnl[i] = 0.0;
+        g_strategy_max_dd_seq[i] = 0;
+        g_strategy_current_dd_seq[i] = 0;
+        g_strategy_total_rr[i] = 0.0;
+        g_strategy_total_holding_time[i] = 0.0;
+    }
+}
+
+void UpdateStrategyStats(StrategyId sid, double pnl, double rr_ratio, double holding_time_sec) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES) return;
+
+    // Update basic counters
+    g_strategy_trades[idx]++;
+
+    // Update P&L tracking
+    g_strategy_net_pnl[idx] += pnl;
+    if(pnl > 0) {
+        g_strategy_wins[idx]++;
+        g_strategy_gross_profit[idx] += pnl;
+        g_strategy_current_dd_seq[idx] = 0; // Reset consecutive losses
+    } else {
+        g_strategy_gross_loss[idx] += MathAbs(pnl);
+        g_strategy_current_dd_seq[idx]++;
+        if(g_strategy_current_dd_seq[idx] > g_strategy_max_dd_seq[idx]) {
+            g_strategy_max_dd_seq[idx] = g_strategy_current_dd_seq[idx];
+        }
+    }
+
+    // Update derived metrics
+    g_strategy_total_rr[idx] += rr_ratio;
+    g_strategy_total_holding_time[idx] += holding_time_sec;
+
+    if(Inp_LogVerbose) {
+        Print("Strategy Stats Updated: ", GetStrategyShort(sid),
+              " | Trades: ", g_strategy_trades[idx],
+              " | Wins: ", g_strategy_wins[idx],
+              " | Net: ", DoubleToString(g_strategy_net_pnl[idx], 2),
+              " | DD Seq: ", g_strategy_current_dd_seq[idx]);
+    }
+}
+
+// Helper functions to get derived strategy statistics
+double GetStrategyWinRate(StrategyId sid) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES || g_strategy_trades[idx] == 0) return 0.0;
+    return (double)g_strategy_wins[idx] / (double)g_strategy_trades[idx] * 100.0;
+}
+
+double GetStrategyProfitFactor(StrategyId sid) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES || g_strategy_gross_loss[idx] == 0) return 0.0;
+    return g_strategy_gross_profit[idx] / g_strategy_gross_loss[idx];
+}
+
+double GetStrategyAvgRR(StrategyId sid) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES || g_strategy_trades[idx] == 0) return 0.0;
+    return g_strategy_total_rr[idx] / (double)g_strategy_trades[idx];
+}
+
+double GetStrategyAvgPayoff(StrategyId sid) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES || g_strategy_trades[idx] == 0) return 0.0;
+    return g_strategy_net_pnl[idx] / (double)g_strategy_trades[idx];
+}
+
+double GetStrategyAvgHoldingTimeMin(StrategyId sid) {
+    int idx = (int)sid;
+    if(idx < 0 || idx >= MAX_STRATEGIES || g_strategy_trades[idx] == 0) return 0.0;
+    return (g_strategy_total_holding_time[idx] / (double)g_strategy_trades[idx]) / 60.0; // Convert to minutes
+}
+
+void PrintStrategyStatsSummary() {
+    Print("=== STRATEGY STATISTICS SUMMARY ===");
+    for(int i = 0; i < MAX_STRATEGIES; i++) {
+        StrategyId sid = (StrategyId)i;
+        if(g_strategy_trades[i] > 0) {
+            Print("Strategy: ", GetStrategyShort(sid), " (", GetStrategyName(sid), ")");
+            Print("  Trades: ", g_strategy_trades[i],
+                  " | Wins: ", g_strategy_wins[i],
+                  " | WinRate: ", DoubleToString(GetStrategyWinRate(sid), 1), "%");
+            Print("  Net P&L: ", DoubleToString(g_strategy_net_pnl[i], 2),
+                  " | Gross Profit: ", DoubleToString(g_strategy_gross_profit[i], 2),
+                  " | Gross Loss: ", DoubleToString(g_strategy_gross_loss[i], 2));
+            Print("  Profit Factor: ", DoubleToString(GetStrategyProfitFactor(sid), 2),
+                  " | Avg RR: ", DoubleToString(GetStrategyAvgRR(sid), 2),
+                  " | Avg Payoff: ", DoubleToString(GetStrategyAvgPayoff(sid), 2));
+            Print("  Max DD Sequence: ", g_strategy_max_dd_seq[i],
+                  " | Avg Hold Time: ", DoubleToString(GetStrategyAvgHoldingTimeMin(sid), 1), " min");
+            Print("  ---");
+        }
+    }
+    Print("=== END STRATEGY SUMMARY ===");
 }
 
 //--- Structures
@@ -416,11 +738,44 @@ IndCache g_cache;
 double g_slippage_ring[];
 int g_slip_index = 0;
 
+//--- Exit reason tracking system
+struct ExitReasonTracker {
+    ulong ticket;
+    string exit_reason;
+    datetime timestamp;
+};
+
+ExitReasonTracker g_exit_reasons[];
+int g_exit_reason_count = 0;
+const int MAX_EXIT_REASONS = 100;
+
+//--- Trailing stop tracking
+struct TrailingStopTracker {
+    ulong ticket;
+    double last_sl;
+    datetime last_modification;
+};
+
+TrailingStopTracker g_trailing_stops[];
+int g_trailing_stop_count = 0;
+const int MAX_TRAILING_STOPS = 50;
+
 //--- Trade meta lookup system
 TradeMeta g_trade_metas[];
 ulong g_trade_tickets[];
 int g_meta_count = 0;
 const int MAX_TRADE_METAS = 1000;  // Maximum number of concurrent trade metas to store
+
+//--- Global Strategy Statistics System
+long g_strategy_trades[MAX_STRATEGIES];      // Total trades per strategy
+long g_strategy_wins[MAX_STRATEGIES];        // Winning trades per strategy
+double g_strategy_gross_profit[MAX_STRATEGIES];  // Total gross profit per strategy
+double g_strategy_gross_loss[MAX_STRATEGIES];    // Total gross loss per strategy
+double g_strategy_net_pnl[MAX_STRATEGIES];       // Net P&L per strategy
+long g_strategy_max_dd_seq[MAX_STRATEGIES];      // Max consecutive losses per strategy
+long g_strategy_current_dd_seq[MAX_STRATEGIES];  // Current consecutive losses per strategy
+double g_strategy_total_rr[MAX_STRATEGIES];      // Sum of all RR ratios for average calculation
+double g_strategy_total_holding_time[MAX_STRATEGIES]; // Sum of holding times in seconds
 
 //--- Priority order (higher number = higher priority)
 int GetStrategyPriority(StrategyId sid) {
@@ -1038,6 +1393,11 @@ public:
         datetime todays_day_start = StructToTime(day_start_dt);
         todays_day_start -= effective_offset * 3600;
 
+        // Write strategy summary before resetting counters (daily summary trigger)
+        if(Inp_WriteCSV) {
+            g_telemetry.WriteStrategySummary();
+        }
+
         // Reset daily counters
         double prev_day_loss = limits.day_loss;
         int prev_trades = limits.trades_today;
@@ -1097,6 +1457,8 @@ public:
             if(!limits.locked_day) {
                 limits.locked_day = true;
                 day_lock_logged = false;
+                // Close all open positions due to daily lock
+                CloseAllPositionsDueToDailyLock();
             }
             if(!day_lock_logged) {
                 Print("*** TRADING LOCKED *** Reason: Daily loss cap reached (",
@@ -1111,6 +1473,8 @@ public:
             if(!limits.locked_week) {
                 limits.locked_week = true;
                 week_lock_logged = false;
+                // Close all open positions due to weekly lock
+                CloseAllPositionsDueToWeeklyLock();
             }
             if(!week_lock_logged) {
                 Print("*** TRADING LOCKED *** Reason: Weekly loss cap reached (",
@@ -1128,6 +1492,31 @@ public:
     int GetTradesToday() { return limits.trades_today; }
     bool IsLockedDay() { return limits.locked_day; }
     bool IsLockedWeek() { return limits.locked_week; }
+
+    // Close all positions due to daily/weekly lock
+    void CloseAllPositionsDueToDailyLock() {
+        for(int i = 0; i < PositionsTotal(); i++) {
+            if(PositionSelectByTicket(PositionGetTicket(i))) {
+                if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
+                    ulong ticket = PositionGetTicket(i);
+                    StoreExitReason(ticket, "DAILY_LOCK");
+                    g_exec_manager.PositionClose(ticket);
+                }
+            }
+        }
+    }
+
+    void CloseAllPositionsDueToWeeklyLock() {
+        for(int i = 0; i < PositionsTotal(); i++) {
+            if(PositionSelectByTicket(PositionGetTicket(i))) {
+                if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
+                    ulong ticket = PositionGetTicket(i);
+                    StoreExitReason(ticket, "WEEKLY_LOCK");
+                    g_exec_manager.PositionClose(ticket);
+                }
+            }
+        }
+    }
 };
 
 //--- ExecManager class
@@ -1276,8 +1665,10 @@ class Telemetry {
 private:
     int csv_handle;
     int session_csv_handle;
+    int strategy_csv_handle;
     string csv_filename;
     string session_csv_filename;
+    string strategy_csv_filename;
 
     // Daily rejection counters
     int reject_spread_too_wide;
@@ -1291,7 +1682,7 @@ private:
     datetime last_reset_date;
 
 public:
-    Telemetry() : csv_handle(INVALID_HANDLE), session_csv_handle(INVALID_HANDLE) {
+    Telemetry() : csv_handle(INVALID_HANDLE), session_csv_handle(INVALID_HANDLE), strategy_csv_handle(INVALID_HANDLE) {
         ResetDailyCounters();
     }
 
@@ -1300,19 +1691,22 @@ public:
 
         csv_filename = Inp_EA_Tag + "_trades_" + TimeToString(TimeCurrent(), TIME_DATE) + ".csv";
         session_csv_filename = Inp_EA_Tag + "_sessions_" + TimeToString(TimeCurrent(), TIME_DATE) + ".csv";
+        strategy_csv_filename = Inp_EA_Tag + "_strategy_summary_" + TimeToString(TimeCurrent(), TIME_DATE) + ".csv";
 
         csv_handle = FileOpen(csv_filename, FILE_WRITE | FILE_CSV);
         session_csv_handle = FileOpen(session_csv_filename, FILE_WRITE | FILE_CSV);
+        strategy_csv_handle = FileOpen(strategy_csv_filename, FILE_WRITE | FILE_CSV);
 
         if(csv_handle != INVALID_HANDLE) {
-            // Comprehensive CSV header with all trade metrics
+            // Comprehensive CSV header with all trade metrics including partial close support
             FileWrite(csv_handle,
                 "ts", "ord_id", "sid", "strategy_name", "strategy_short", "dir",
                 "entry", "sl", "tp", "exit", "pnl", "pnl_pct", "rr_ratio",
                 "spread", "slip", "mae", "mfe", "mae_pct", "mfe_pct",
                 "atr", "adx", "rsi", "vwap_dev", "vwap_slope",
                 "session", "regime", "bias", "holding_sec", "exit_reason",
-                "entry_time", "exit_time", "lots", "commission"
+                "entry_time", "exit_time", "lots", "commission",
+                "parent_ticket", "partial_sequence", "original_lots", "remaining_lots"
             );
             Print("Trades CSV file created: ", csv_filename);
         } else {
@@ -1326,6 +1720,14 @@ public:
             Print("Session CSV file created: ", session_csv_filename);
         } else {
             Print("ERROR: Failed to create session CSV file: ", session_csv_filename);
+        }
+
+        if(strategy_csv_handle != INVALID_HANDLE) {
+            FileWrite(strategy_csv_handle, "timestamp", "strategy_id", "strategy_name", "strategy_short", "trades", "wins", "win_rate_pct",
+                     "profit_factor", "net_pnl", "gross_profit", "gross_loss", "avg_rr_ratio", "avg_payoff", "max_dd_sequence", "avg_holding_time_min");
+            Print("Strategy Summary CSV file created: ", strategy_csv_filename);
+        } else {
+            Print("ERROR: Failed to create strategy summary CSV file: ", strategy_csv_filename);
         }
 
         return true;
@@ -1395,7 +1797,11 @@ public:
             TimeToString(meta.entry_time, TIME_DATE|TIME_SECONDS),
             TimeToString(exit_time, TIME_DATE|TIME_SECONDS),
             DoubleToString(lots, 2),
-            "0" // Commission placeholder
+            "0", // Commission placeholder
+            IntegerToString(meta.parent_ticket),
+            IntegerToString(meta.partial_sequence),
+            DoubleToString(meta.original_lots, 2),
+            DoubleToString(meta.remaining_lots, 2)
         );
         FileFlush(csv_handle);
     }
@@ -1452,6 +1858,50 @@ public:
         FileFlush(session_csv_handle);
     }
 
+    void WriteStrategySummary() {
+        if(strategy_csv_handle == INVALID_HANDLE) return;
+
+        string timestamp = TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES);
+
+        // Write summary for each strategy that has trades
+        for(int i = 0; i < MAX_STRATEGIES; i++) {
+            StrategyId sid = (StrategyId)i;
+
+            // Skip strategies with no trades
+            if(g_strategy_trades[i] == 0) continue;
+
+            // Calculate derived metrics
+            double win_rate = GetStrategyWinRate(sid);
+            double profit_factor = GetStrategyProfitFactor(sid);
+            double avg_rr = GetStrategyAvgRR(sid);
+            double avg_payoff = GetStrategyAvgPayoff(sid);
+            double avg_holding_time_min = GetStrategyAvgHoldingTimeMin(sid);
+
+            FileWrite(strategy_csv_handle,
+                timestamp,
+                (int)sid,
+                GetStrategyName(sid),
+                GetStrategyShort(sid),
+                g_strategy_trades[i],
+                g_strategy_wins[i],
+                DoubleToString(win_rate, 2),
+                DoubleToString(profit_factor, 2),
+                DoubleToString(g_strategy_net_pnl[i], 2),
+                DoubleToString(g_strategy_gross_profit[i], 2),
+                DoubleToString(g_strategy_gross_loss[i], 2),
+                DoubleToString(avg_rr, 3),
+                DoubleToString(avg_payoff, 2),
+                g_strategy_max_dd_seq[i],
+                DoubleToString(avg_holding_time_min, 1)
+            );
+        }
+        FileFlush(strategy_csv_handle);
+
+        if(Inp_LogVerbose) {
+            Print("Strategy summary written to CSV: ", strategy_csv_filename);
+        }
+    }
+
     void CloseCSV() {
         if(csv_handle != INVALID_HANDLE) {
             FileClose(csv_handle);
@@ -1460,6 +1910,10 @@ public:
         if(session_csv_handle != INVALID_HANDLE) {
             FileClose(session_csv_handle);
             session_csv_handle = INVALID_HANDLE;
+        }
+        if(strategy_csv_handle != INVALID_HANDLE) {
+            FileClose(strategy_csv_handle);
+            strategy_csv_handle = INVALID_HANDLE;
         }
     }
 
@@ -1722,7 +2176,9 @@ public:
                 for(int i = 0; i < PositionsTotal(); i++) {
                     if(PositionSelectByTicket(PositionGetTicket(i))) {
                         if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
-                            g_exec_manager.PositionClose(PositionGetTicket(i));
+                            ulong ticket = PositionGetTicket(i);
+                            StoreExitReason(ticket, "TIME_STOP");
+                            g_exec_manager.PositionClose(ticket);
                         }
                     }
                 }
@@ -1839,7 +2295,9 @@ public:
                 for(int i = 0; i < PositionsTotal(); i++) {
                     if(PositionSelectByTicket(PositionGetTicket(i))) {
                         if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
-                            g_exec_manager.PositionClose(PositionGetTicket(i));
+                            ulong ticket = PositionGetTicket(i);
+                            StoreExitReason(ticket, "ADX_BREAK");
+                            g_exec_manager.PositionClose(ticket);
                         }
                     }
                 }
@@ -2037,7 +2495,9 @@ public:
                 for(int i = 0; i < PositionsTotal(); i++) {
                     if(PositionSelectByTicket(PositionGetTicket(i))) {
                         if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
-                            g_exec_manager.PositionClose(PositionGetTicket(i));
+                            ulong ticket = PositionGetTicket(i);
+                            StoreExitReason(ticket, "TIME_STOP");
+                            g_exec_manager.PositionClose(ticket);
                         }
                     }
                 }
@@ -2389,7 +2849,9 @@ public:
                 for(int i = 0; i < PositionsTotal(); i++) {
                     if(PositionSelectByTicket(PositionGetTicket(i))) {
                         if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
-                            g_exec_manager.PositionClose(PositionGetTicket(i));
+                            ulong ticket = PositionGetTicket(i);
+                            StoreExitReason(ticket, "TIME_STOP");
+                            g_exec_manager.PositionClose(ticket);
                         }
                     }
                 }
@@ -2503,7 +2965,9 @@ public:
                 for(int i = 0; i < PositionsTotal(); i++) {
                     if(PositionSelectByTicket(PositionGetTicket(i))) {
                         if(PositionGetInteger(POSITION_MAGIC) == Inp_Magic) {
-                            g_exec_manager.PositionClose(PositionGetTicket(i));
+                            ulong ticket = PositionGetTicket(i);
+                            StoreExitReason(ticket, "TIME_STOP");
+                            g_exec_manager.PositionClose(ticket);
                         }
                     }
                 }
@@ -2820,6 +3284,13 @@ int OnInit() {
     // Initialize trade meta lookup system
     InitTradeMetaSystem();
 
+    // Initialize dynamic arrays with proper sizing
+    ArrayResize(g_exit_reasons, MAX_EXIT_REASONS);
+    ArrayResize(g_trailing_stops, MAX_TRAILING_STOPS);
+
+    // Initialize global strategy statistics
+    InitStrategyStats();
+
     // Initialize all modules
     g_orb_module = new ORBModule();
     g_vwap_fade_module = new VWAPFadeModule();
@@ -2888,6 +3359,14 @@ void OnTick() {
 
     // Check for daily reset (must be called on every tick)
     g_risk_manager.UpdateLimits();
+
+    // Periodic cleanup of tracking systems (every 10 minutes)
+    static datetime last_cleanup = 0;
+    if(TimeCurrent() - last_cleanup > 600) {
+        CleanupOldExitReasons();
+        CleanupTrailingStops();
+        last_cleanup = TimeCurrent();
+    }
 
     // If no active strategy, try to select one
     if(g_active == S_NONE) {
@@ -2971,6 +3450,13 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeRequest& request,
                         const MqlTradeResult&  result)
 {
+    // Track position modifications for trailing stop detection
+    if(trans.type == TRADE_TRANSACTION_REQUEST && request.action == TRADE_ACTION_SLTP) {
+        if(request.magic == Inp_Magic) {
+            TrackPositionModification(request.position, request.sl);
+        }
+    }
+
     if(trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
     if(!HistoryDealSelect(trans.deal)) return;
 
@@ -2988,7 +3474,13 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
             else if(request.type == ORDER_TYPE_SELL)
                 slippage_pts = Pts(request.price - result.price);
 
-            g_slippage_ring[g_slip_index] = slippage_pts;
+            // Ensure slippage ring is properly sized and bounds checked
+            if(ArraySize(g_slippage_ring) < Inp_SlipRingSize) {
+                ArrayResize(g_slippage_ring, Inp_SlipRingSize);
+            }
+            if(g_slip_index < ArraySize(g_slippage_ring)) {
+                g_slippage_ring[g_slip_index] = slippage_pts;
+            }
             g_slip_index = (g_slip_index + 1) % Inp_SlipRingSize;
             g_spread_guard.RecordSlippage(MathAbs(slippage_pts));
         }
@@ -2998,13 +3490,18 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
     // Exit-deal: registrér udfald og frigiv strategi
     double deal_profit = HistoryDealGetDouble(trans.deal, DEAL_PROFIT);
     double exit_price = HistoryDealGetDouble(trans.deal, DEAL_PRICE);
+    double deal_volume = HistoryDealGetDouble(trans.deal, DEAL_VOLUME);
     datetime exit_time = TimeCurrent();
     ulong position_ticket = HistoryDealGetInteger(trans.deal, DEAL_POSITION_ID);
+
+    // Check if this is a partial close
+    bool is_partial_close = IsPartialClose(position_ticket, deal_volume);
 
     g_risk_manager.RegisterOutcome(deal_profit);
     g_last_exit_time = exit_time;
 
     bool is_profit = (deal_profit > 0);
+    StrategyId closing_sid = g_active; // Declare closing_sid at function scope
 
     // Write comprehensive telemetry using trade meta lookup
     if(Inp_WriteCSV) {
@@ -3012,23 +3509,62 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
         bool meta_found = GetTradeMeta(position_ticket, trade_meta);
 
         if(meta_found) {
-            // Determine exit reason
-            string exit_reason = "NORMAL";
-            if(MathAbs(exit_price - trade_meta.planned_sl) < _Point * 2) {
-                exit_reason = "STOP_LOSS";
-            } else if(MathAbs(exit_price - trade_meta.planned_tp) < _Point * 2) {
-                exit_reason = "TAKE_PROFIT";
-            } else if(!is_profit) {
-                exit_reason = "MANUAL_LOSS";
-            } else {
-                exit_reason = "MANUAL_PROFIT";
+            // Enhanced exit reason determination
+            string exit_reason = GetStoredExitReason(position_ticket);
+
+            if(exit_reason == "") {
+                // No stored exit reason, determine from price analysis
+                if(MathAbs(exit_price - trade_meta.planned_sl) < _Point * 2) {
+                    exit_reason = "STOP_LOSS";
+                } else if(MathAbs(exit_price - trade_meta.planned_tp) < _Point * 2) {
+                    exit_reason = "TAKE_PROFIT";
+                } else if(IsTrailingStopExit(position_ticket, exit_price)) {
+                    exit_reason = "TSL";
+                } else if(g_risk_manager.IsLockedDay() || g_risk_manager.IsLockedWeek()) {
+                    exit_reason = "DAILY_LOCK";
+                } else if(!is_profit) {
+                    exit_reason = "MANUAL_LOSS";
+                } else {
+                    exit_reason = "MANUAL_PROFIT";
+                }
             }
 
-            // Write comprehensive trade data
-            g_telemetry.WriteTrade(trade_meta, exit_price, deal_profit, exit_time, exit_reason);
+            // Handle partial close vs full close
+            if(is_partial_close) {
+                // Create partial close meta with closed volume
+                static int partial_counter = 1;
+                TradeMeta partial_meta = CreatePartialCloseMeta(trade_meta, deal_volume, partial_counter++);
 
-            // Remove from meta lookup to free memory
-            RemoveTradeMeta(position_ticket);
+                // Add "PARTIAL" prefix to exit reason
+                exit_reason = "PARTIAL_" + exit_reason;
+
+                // Write partial close data
+                g_telemetry.WriteTrade(partial_meta, exit_price, deal_profit, exit_time, exit_reason);
+
+                // Update remaining lots in the original meta
+                UpdateRemainingLots(position_ticket, deal_volume);
+
+                if(Inp_LogVerbose) {
+                    Print("Partial close recorded: Ticket ", position_ticket,
+                          " | Closed: ", DoubleToString(deal_volume, 2),
+                          " | Remaining: ", DoubleToString(trade_meta.remaining_lots - deal_volume, 2));
+                }
+            } else {
+                // Full close - write final trade data
+                g_telemetry.WriteTrade(trade_meta, exit_price, deal_profit, exit_time, exit_reason);
+
+                // Remove from meta lookup to free memory
+                RemoveTradeMeta(position_ticket);
+            }
+
+            // Calculate metrics for strategy statistics (always update for any close)
+            double risk_pts = MathAbs(trade_meta.entry_price - trade_meta.planned_sl) / _Point;
+            double reward_pts = MathAbs(exit_price - trade_meta.entry_price) / _Point;
+            double rr_ratio = (risk_pts > 0) ? reward_pts / risk_pts : 0;
+            double holding_time_sec = (double)(exit_time - trade_meta.entry_time);
+
+            // Update global strategy statistics
+            UpdateStrategyStats(trade_meta.sid, deal_profit, rr_ratio, holding_time_sec);
 
             if(Inp_LogVerbose) {
                 Print("Trade CSV written: ", trade_meta.strategy_short, " | Ticket: ", position_ticket,
@@ -3036,12 +3572,15 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
             }
         } else {
             // Fallback for trades without meta (shouldn't happen in normal operation)
-            StrategyId closing_sid = g_active;
+            closing_sid = g_active; // Use already declared variable
             string strategy_name = EnumToString(closing_sid);
             string direction = (HistoryDealGetInteger(trans.deal, DEAL_TYPE) == DEAL_TYPE_BUY) ? "SELL" : "BUY"; // Exit direction is opposite
             ulong order_id = HistoryDealGetInteger(trans.deal, DEAL_ORDER);
 
             g_telemetry.WriteTrade(strategy_name, direction, exit_price, 0, 0, exit_price, deal_profit, order_id, exit_time - 300);
+
+            // Update strategy statistics with fallback values (no RR ratio or holding time available)
+            UpdateStrategyStats(closing_sid, deal_profit, 0.0, 300.0); // Assume 5 min holding time
 
             if(Inp_LogVerbose) {
                 Print("WARNING: Trade meta not found for ticket ", position_ticket, " - using fallback CSV write");
@@ -3049,8 +3588,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
         }
     }
 
-    // Notificér aktivt modul og sæt state → M_DONE
-    if(closing_sid != S_NONE) {
+    // Notificér aktivt modul og sæt state → M_DONE (only on full close)
+    if(closing_sid != S_NONE && !is_partial_close) {
         for(int i=0; i<ArraySize(g_modules); ++i) {
             ModuleBase* m = g_modules[i];
             if(m != NULL && m.GetId() == closing_sid) {
@@ -3058,10 +3597,10 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                 break;
             }
         }
-    }
 
-    // CRITICAL: frigiv EA til nye handler
-    g_active = S_NONE;
+        // CRITICAL: frigiv EA til nye handler (only on full close)
+        g_active = S_NONE;
+    }
 
     if(Inp_LogVerbose) {
         Print("Trade closed: ", is_profit ? "PROFIT" : "LOSS",
@@ -3079,6 +3618,14 @@ void OnDeinit(const int reason) {
     RiskLimits limits = g_risk_manager.GetLimits();
     Print("Risk locks - Day: ", limits.locked_day ? "YES" : "NO",
           " | Week: ", limits.locked_week ? "YES" : "NO");
+
+    // Print strategy statistics summary
+    PrintStrategyStatsSummary();
+
+    // Write strategy summary to CSV before cleanup
+    if(Inp_WriteCSV) {
+        g_telemetry.WriteStrategySummary();
+    }
 
     // Print modulstatistik FØR delete og med -> på pointere
     for(int i=0; i<ArraySize(g_modules); ++i) {

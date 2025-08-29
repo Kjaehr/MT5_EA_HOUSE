@@ -84,3 +84,89 @@ Logging Framework - Bedre debugging og monitoring
 Error Handling - Mere robust execution
 Performance Optimization - Hurtigere execution
 Multi-timeframe Analysis - Bedre signal quality
+
+Prompt 1
+Implement comprehensive error handling for the MT5 EA project. Check mql5book.txt for proper MQL5 error handling patterns including try-catch equivalents, GetLastError() usage, and graceful degradation. Focus on:
+
+1. Network error handling for broker connection issues
+2. Data validation for all inputs and market data
+3. Graceful degradation when indicators fail
+4. Comprehensive error logging with error codes
+
+Reference mql5book.txt sections on error handling, GetLastError(), and robust programming patterns.
+
+Prompt 2
+Optimize the OnTick performance for the MT5 EA. Consult mql5book.txt for efficient tick processing, memory management, and indicator buffer optimization. Implement:
+
+1. Tick filtering to reduce unnecessary calculations
+2. Data caching for frequently accessed values
+3. Optimized array operations and memory management
+4. Indicator buffer optimization
+
+Check mql5book.txt for performance best practices, memory management, and efficient data handling patterns.
+
+
+Prompt 3
+Optimize the OnTick performance for the MT5 EA. Consult mql5book.txt for efficient tick processing, memory management, and indicator buffer optimization. Implement:
+
+1. Tick filtering to reduce unnecessary calculations
+2. Data caching for frequently accessed values
+3. Optimized array operations and memory management
+4. Indicator buffer optimization
+
+Check mql5book.txt for performance best practices, memory management, and efficient data handling patterns.
+
+
+Prompt 4
+Optimize the OnTick performance for the MT5 EA. Consult mql5book.txt for efficient tick processing, memory management, and indicator buffer optimization. Implement:
+
+1. Tick filtering to reduce unnecessary calculations
+2. Data caching for frequently accessed values
+3. Optimized array operations and memory management
+4. Indicator buffer optimization
+
+Check mql5book.txt for performance best practices, memory management, and efficient data handling patterns.
+
+
+Prompt 5
+Add sophisticated market analysis features to the MT5 EA. Check mql5book.txt for multi-timeframe analysis, economic calendar integration, and market regime detection. Implement:
+
+1. Multi-timeframe confirmation signals
+2. Economic calendar news filtering
+3. Market regime detection (trending vs ranging)
+4. Signal quality scoring system
+
+Reference mql5book.txt for timeframe handling, calendar functions, and market analysis techniques.
+
+
+Prompt 6
+Add sophisticated market analysis features to the MT5 EA. Check mql5book.txt for multi-timeframe analysis, economic calendar integration, and market regime detection. Implement:
+
+1. Multi-timeframe confirmation signals
+2. Economic calendar news filtering
+3. Market regime detection (trending vs ranging)
+4. Signal quality scoring system
+
+Reference mql5book.txt for timeframe handling, calendar functions, and market analysis techniques.
+
+
+Prompt 7
+Add sophisticated market analysis features to the MT5 EA. Check mql5book.txt for multi-timeframe analysis, economic calendar integration, and market regime detection. Implement:
+
+1. Multi-timeframe confirmation signals
+2. Economic calendar news filtering
+3. Market regime detection (trending vs ranging)
+4. Signal quality scoring system
+
+Reference mql5book.txt for timeframe handling, calendar functions, and market analysis techniques.
+
+
+Prompt 8
+Add sophisticated market analysis features to the MT5 EA. Check mql5book.txt for multi-timeframe analysis, economic calendar integration, and market regime detection. Implement:
+
+1. Multi-timeframe confirmation signals
+2. Economic calendar news filtering
+3. Market regime detection (trending vs ranging)
+4. Signal quality scoring system
+
+Reference mql5book.txt for timeframe handling, calendar functions, and market analysis techniques.

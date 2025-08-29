@@ -125,7 +125,7 @@ public:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CConfigManager::CConfigManager(string config_file = "ea_config.txt")
+CConfigManager::CConfigManager(string config_file)
 {
     m_config_file = config_file;
     m_is_loaded = false;

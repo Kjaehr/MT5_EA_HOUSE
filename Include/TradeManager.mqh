@@ -155,7 +155,7 @@ CTradeManager::CTradeManager(string symbol, int magic_number, CLogger* logger = 
 
     if(m_logger != NULL)
     {
-        m_logger->Info("TradeManager initialized for " + m_symbol + " with magic " + IntegerToString(m_magic_number));
+        m_logger.Info("TradeManager initialized for " + m_symbol + " with magic " + IntegerToString(m_magic_number));
     }
 }
 
@@ -166,7 +166,7 @@ CTradeManager::~CTradeManager()
 {
     if(m_logger != NULL)
     {
-        m_logger->Info("TradeManager destroyed");
+        m_logger.Info("TradeManager destroyed");
     }
 }
 
@@ -180,7 +180,7 @@ void CTradeManager::SetMagicNumber(int magic_number)
 
     if(m_logger != NULL)
     {
-        m_logger->Info("Magic number updated to " + IntegerToString(m_magic_number));
+        m_logger.Info("Magic number updated to " + IntegerToString(m_magic_number));
     }
 }
 
@@ -251,7 +251,7 @@ double CTradeManager::CalculateLotSize(double entry_price, double stop_loss)
     if(m_config == NULL) return 0.1; // Default if no config
 
     double equity = AccountInfoDouble(ACCOUNT_EQUITY);
-    double risk_amount = equity * m_config->GetRiskPerTrade();
+    double risk_amount = equity * m_config.GetRiskPerTrade();
 
     double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
     double tick_value = SymbolInfoDouble(m_symbol, SYMBOL_TRADE_TICK_VALUE);
@@ -301,7 +301,7 @@ STradeResult CTradeManager::OpenLongMarket(double volume, double sl, double tp, 
     {
         result.error_code = ERR_INVALID_TRADE_PARAMETERS;
         if(m_logger != NULL)
-            m_logger->Error("Invalid trade parameters for long market order");
+            m_logger.Error("Invalid trade parameters for long market order");
         return result;
     }
 
@@ -317,8 +317,8 @@ STradeResult CTradeManager::OpenLongMarket(double volume, double sl, double tp, 
 
         if(m_logger != NULL)
         {
-            m_logger->LogTrade("BUY MARKET", m_symbol, volume, result.executed_price, sl, tp, comment);
-            m_logger->LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
+            m_logger.LogTrade("BUY MARKET", m_symbol, volume, result.executed_price, sl, tp, comment);
+            m_logger.LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
         }
     }
     else
@@ -326,7 +326,7 @@ STradeResult CTradeManager::OpenLongMarket(double volume, double sl, double tp, 
         result.error_code = GetLastError();
         if(m_logger != NULL)
         {
-            m_logger->LogTradeResult(false, result.error_code, "Failed to open long position");
+            m_logger.LogTradeResult(false, result.error_code, "Failed to open long position");
         }
     }
 
@@ -349,7 +349,7 @@ STradeResult CTradeManager::OpenShortMarket(double volume, double sl, double tp,
     {
         result.error_code = ERR_INVALID_TRADE_PARAMETERS;
         if(m_logger != NULL)
-            m_logger->Error("Invalid trade parameters for short market order");
+            m_logger.Error("Invalid trade parameters for short market order");
         return result;
     }
 
@@ -365,8 +365,8 @@ STradeResult CTradeManager::OpenShortMarket(double volume, double sl, double tp,
 
         if(m_logger != NULL)
         {
-            m_logger->LogTrade("SELL MARKET", m_symbol, volume, result.executed_price, sl, tp, comment);
-            m_logger->LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
+            m_logger.LogTrade("SELL MARKET", m_symbol, volume, result.executed_price, sl, tp, comment);
+            m_logger.LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
         }
     }
     else
@@ -374,7 +374,7 @@ STradeResult CTradeManager::OpenShortMarket(double volume, double sl, double tp,
         result.error_code = GetLastError();
         if(m_logger != NULL)
         {
-            m_logger->LogTradeResult(false, result.error_code, "Failed to open short position");
+            m_logger.LogTradeResult(false, result.error_code, "Failed to open short position");
         }
     }
 
@@ -408,7 +408,7 @@ void CTradeManager::LogTradeAttempt(ENUM_ORDER_TYPE order_type, double volume, d
     string order_type_str = (order_type == ORDER_TYPE_BUY) ? "BUY" : "SELL";
     string message = StringFormat("Attempting %s: %.2f lots @ %.5f SL:%.5f TP:%.5f [%s]",
                                  order_type_str, volume, price, sl, tp, comment);
-    m_logger->Debug(message);
+    m_logger.Debug(message);
 }
 
 //+------------------------------------------------------------------+
@@ -461,9 +461,9 @@ bool CTradeManager::ClosePosition(string reason = "Manual close")
     if(m_logger != NULL)
     {
         if(result)
-            m_logger->Info("Position closed: " + reason);
+            m_logger.Info("Position closed: " + reason);
         else
-            m_logger->Error("Failed to close position: " + reason);
+            m_logger.Error("Failed to close position: " + reason);
     }
 
     return result;
@@ -485,9 +485,9 @@ bool CTradeManager::ClosePartialPosition(double volume, string reason = "Partial
     if(m_logger != NULL)
     {
         if(result)
-            m_logger->Info(StringFormat("Partial position closed: %.2f lots - %s", volume, reason));
+            m_logger.Info(StringFormat("Partial position closed: %.2f lots - %s", volume, reason));
         else
-            m_logger->Error("Failed to close partial position: " + reason);
+            m_logger.Error("Failed to close partial position: " + reason);
     }
 
     return result;
@@ -506,9 +506,9 @@ bool CTradeManager::ModifyPosition(double new_sl, double new_tp, string reason =
     if(m_logger != NULL)
     {
         if(result)
-            m_logger->Info(StringFormat("Position modified SL:%.5f TP:%.5f - %s", new_sl, new_tp, reason));
+            m_logger.Info(StringFormat("Position modified SL:%.5f TP:%.5f - %s", new_sl, new_tp, reason));
         else
-            m_logger->Error("Failed to modify position: " + reason);
+            m_logger.Error("Failed to modify position: " + reason);
     }
 
     return result;
@@ -531,7 +531,7 @@ STradeResult CTradeManager::OpenLongPosition(double volume, double price, double
     {
         result.error_code = ERR_INVALID_TRADE_PARAMETERS;
         if(m_logger != NULL)
-            m_logger->Error("Invalid trade parameters for long position");
+            m_logger.Error("Invalid trade parameters for long position");
         return result;
     }
 
@@ -554,8 +554,8 @@ STradeResult CTradeManager::OpenLongPosition(double volume, double price, double
         if(m_logger != NULL)
         {
             string order_type_str = (order_type == ORDER_TYPE_BUY_STOP) ? "BUY STOP" : "BUY LIMIT";
-            m_logger->LogTrade(order_type_str, m_symbol, volume, price, sl, tp, comment);
-            m_logger->LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
+            m_logger.LogTrade(order_type_str, m_symbol, volume, price, sl, tp, comment);
+            m_logger.LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
         }
     }
     else
@@ -563,7 +563,7 @@ STradeResult CTradeManager::OpenLongPosition(double volume, double price, double
         result.error_code = GetLastError();
         if(m_logger != NULL)
         {
-            m_logger->LogTradeResult(false, result.error_code, "Failed to place long order");
+            m_logger.LogTradeResult(false, result.error_code, "Failed to place long order");
         }
     }
 
@@ -587,7 +587,7 @@ STradeResult CTradeManager::OpenShortPosition(double volume, double price, doubl
     {
         result.error_code = ERR_INVALID_TRADE_PARAMETERS;
         if(m_logger != NULL)
-            m_logger->Error("Invalid trade parameters for short position");
+            m_logger.Error("Invalid trade parameters for short position");
         return result;
     }
 
@@ -610,8 +610,8 @@ STradeResult CTradeManager::OpenShortPosition(double volume, double price, doubl
         if(m_logger != NULL)
         {
             string order_type_str = (order_type == ORDER_TYPE_SELL_STOP) ? "SELL STOP" : "SELL LIMIT";
-            m_logger->LogTrade(order_type_str, m_symbol, volume, price, sl, tp, comment);
-            m_logger->LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
+            m_logger.LogTrade(order_type_str, m_symbol, volume, price, sl, tp, comment);
+            m_logger.LogTradeResult(true, 0, "Ticket: " + IntegerToString(result.ticket));
         }
     }
     else
@@ -619,7 +619,7 @@ STradeResult CTradeManager::OpenShortPosition(double volume, double price, doubl
         result.error_code = GetLastError();
         if(m_logger != NULL)
         {
-            m_logger->LogTradeResult(false, result.error_code, "Failed to place short order");
+            m_logger.LogTradeResult(false, result.error_code, "Failed to place short order");
         }
     }
 

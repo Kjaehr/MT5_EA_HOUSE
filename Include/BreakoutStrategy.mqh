@@ -74,12 +74,12 @@ bool CBreakoutStrategy::Initialize()
     if(m_ema50_handle == INVALID_HANDLE)
     {
         if(m_logger != NULL)
-            m_logger->Error("Failed to create EMA50 handle for breakout strategy");
+            m_logger.Error("Failed to create EMA50 handle for breakout strategy");
         return false;
     }
 
     if(m_logger != NULL)
-        m_logger->Info("Breakout strategy initialized successfully");
+        m_logger.Info("Breakout strategy initialized successfully");
 
     return true;
 }
@@ -96,7 +96,7 @@ void CBreakoutStrategy::Deinitialize()
     }
 
     if(m_logger != NULL)
-        m_logger->Info("Breakout strategy deinitialized");
+        m_logger.Info("Breakout strategy deinitialized");
 }
 
 //+------------------------------------------------------------------+
@@ -130,7 +130,7 @@ SSignal CBreakoutStrategy::CheckSignal()
        close_copied < bars_needed || open_copied < bars_needed)
     {
         if(m_logger != NULL)
-            m_logger->Warning("Insufficient data for breakout analysis");
+            m_logger.Warning("Insufficient data for breakout analysis");
         return signal;
     }
 
@@ -189,7 +189,7 @@ SSignal CBreakoutStrategy::CheckSignal()
 
         if(m_logger != NULL)
         {
-            m_logger->Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
+            m_logger.Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
                           signal.entry_price, signal.stop_loss, signal.take_profit));
         }
     }
@@ -208,7 +208,7 @@ SSignal CBreakoutStrategy::CheckSignal()
 
         if(m_logger != NULL)
         {
-            m_logger->Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
+            m_logger.Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
                           signal.entry_price, signal.stop_loss, signal.take_profit));
         }
     }
@@ -231,7 +231,7 @@ bool CBreakoutStrategy::ShouldExit(SPositionInfo& position)
     if(position_age_minutes > 240) // 4 hours max
     {
         if(m_logger != NULL)
-            m_logger->Info("Position exit due to time limit (4 hours)");
+            m_logger.Info("Position exit due to time limit (4 hours)");
         return true;
     }
 

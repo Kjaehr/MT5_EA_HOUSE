@@ -64,7 +64,7 @@ public:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CLogger::CLogger(string prefix = "EA", ENUM_LOG_LEVEL level = LOG_LEVEL_INFO)
+CLogger::CLogger(string prefix, ENUM_LOG_LEVEL level)
 {
     m_prefix = prefix;
     m_log_level = level;
@@ -108,7 +108,7 @@ string CLogger::GetLogLevelString(ENUM_LOG_LEVEL level)
 string CLogger::GetTimestamp()
 {
     MqlDateTime dt;
-    TimeCurrent(dt);
+    TimeToStruct(TimeCurrent(), dt);
     return StringFormat("%04d.%02d.%02d %02d:%02d:%02d",
                        dt.year, dt.mon, dt.day, dt.hour, dt.min, dt.sec);
 }
@@ -124,12 +124,12 @@ bool CLogger::ShouldLog(ENUM_LOG_LEVEL level)
 //+------------------------------------------------------------------+
 //| Enable file logging                                              |
 //+------------------------------------------------------------------+
-void CLogger::EnableFileLogging(string filename = "")
+void CLogger::EnableFileLogging(string filename)
 {
     if(filename == "")
     {
         MqlDateTime dt;
-        TimeCurrent(dt);
+        TimeToStruct(TimeCurrent(), dt);
         filename = StringFormat("%s_%04d%02d%02d.log", m_prefix, dt.year, dt.mon, dt.day);
     }
 

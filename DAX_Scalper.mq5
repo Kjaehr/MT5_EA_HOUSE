@@ -82,7 +82,7 @@ int OnInit()
     }
 
     if(EnableFileLogging)
-        g_logger.EnableFileLogging();
+        g_logger.EnableFileLogging("");
 
     g_logger.Info("=== DAX EA REFACTORED v2.0 STARTING ===");
 
@@ -151,7 +151,7 @@ int OnInit()
         g_ma_strategy = new CMAStrategy(_Symbol, _Period);
         if(g_ma_strategy == NULL)
         {
-            g_logger->Error("Failed to create MA strategy");
+            g_logger.Error("Failed to create MA strategy");
             return INIT_FAILED;
         }
 
@@ -379,11 +379,11 @@ void ExecuteSignal(SSignal& signal)
     {
         daily_trade_count++;
         last_trade_time = TimeCurrent();
-        g_logger->Info("Signal executed successfully. Ticket: " + IntegerToString(result.ticket));
+        g_logger.Info("Signal executed successfully. Ticket: " + IntegerToString(result.ticket));
     }
     else
     {
-        g_logger->Error("Failed to execute signal. Error: " + IntegerToString(result.error_code));
+        g_logger.Error("Failed to execute signal. Error: " + IntegerToString(result.error_code));
     }
 }
 
@@ -445,7 +445,7 @@ void OnTrade()
 
         // Check if it's our symbol and magic number
         if(HistoryDealGetString(ticket, DEAL_SYMBOL) != _Symbol ||
-           HistoryDealGetInteger(ticket, DEAL_MAGIC) != g_config->GetMagicNumber())
+           HistoryDealGetInteger(ticket, DEAL_MAGIC) != g_config.GetMagicNumber())
             continue;
 
         // Only process position closures (DEAL_ENTRY_OUT)
@@ -472,11 +472,11 @@ void OnTrade()
         else if(profit < 0)  // Only count actual losses, not zero-profit deals
         {
             consecutive_losses++;
-            g_logger->Warning("POSITION CLOSED [LOSS]: " + comment + " Loss: " + DoubleToString(profit, 2) +
+            g_logger.Warning("POSITION CLOSED [LOSS]: " + comment + " Loss: " + DoubleToString(profit, 2) +
                            " Consecutive losses: " + IntegerToString(consecutive_losses));
 
             // Implement cooldown after MaxConsecLoss consecutive losses
-            if(consecutive_losses >= g_config->GetMaxConsecLoss())
+            if(consecutive_losses >= g_config.GetMaxConsecLoss())
             {
                 cooldown_end_time = TimeCurrent() + 60 * 60;  // 60 minutes cooldown
                 g_logger.Critical("COOLDOWN ACTIVATED: " + IntegerToString(consecutive_losses) +
@@ -524,16 +524,16 @@ double OnTester()
     if(g_logger != NULL)
     {
         g_logger.Info("OnTester Results:");
-        g_logger->Info("Total Profit: " + DoubleToString(total_profit, 2));
-        g_logger->Info("Total Loss: " + DoubleToString(total_loss, 2));
-        g_logger->Info("Profit Factor: " + DoubleToString(profit_factor, 2));
+        g_logger.Info("Total Profit: " + DoubleToString(total_profit, 2));
+        g_logger.Info("Total Loss: " + DoubleToString(total_loss, 2));
+        g_logger.Info("Profit Factor: " + DoubleToString(profit_factor, 2));
 
         // Print strategy statistics
         if(g_breakout_strategy != NULL)
-            g_breakout_strategy->PrintStatistics();
+            g_breakout_strategy.PrintStatistics();
 
         if(g_ma_strategy != NULL)
-            g_ma_strategy->PrintStatistics();
+            g_ma_strategy.PrintStatistics();
     }
 
     return profit_factor;

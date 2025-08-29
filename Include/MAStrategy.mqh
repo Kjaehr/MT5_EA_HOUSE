@@ -81,12 +81,12 @@ bool CMAStrategy::Initialize()
     if(m_rsi_handle == INVALID_HANDLE || m_ma_fast_handle == INVALID_HANDLE || m_ma_slow_handle == INVALID_HANDLE)
     {
         if(m_logger != NULL)
-            m_logger->Error("Failed to create indicator handles for MA strategy");
+            m_logger.Error("Failed to create indicator handles for MA strategy");
         return false;
     }
 
     if(m_logger != NULL)
-        m_logger->Info("MA strategy initialized successfully");
+        m_logger.Info("MA strategy initialized successfully");
 
     return true;
 }
@@ -115,7 +115,7 @@ void CMAStrategy::Deinitialize()
     }
 
     if(m_logger != NULL)
-        m_logger->Info("MA strategy deinitialized");
+        m_logger.Info("MA strategy deinitialized");
 }
 
 //+------------------------------------------------------------------+
@@ -144,14 +144,14 @@ SSignal CMAStrategy::CheckSignal()
     if(rsi_copied < 3 || ma_fast_copied < 3 || ma_slow_copied < 3)
     {
         if(m_logger != NULL)
-            m_logger->Warning("Insufficient indicator data for MA analysis");
+            m_logger.Warning("Insufficient indicator data for MA analysis");
         return signal;
     }
 
     if(ArraySize(rsi) < 3 || ArraySize(ma_fast) < 3 || ArraySize(ma_slow) < 3)
     {
         if(m_logger != NULL)
-            m_logger->Warning("Indicator array size insufficient");
+            m_logger.Warning("Indicator array size insufficient");
         return signal;
     }
 
@@ -175,8 +175,8 @@ SSignal CMAStrategy::CheckSignal()
         double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
         if(m_config != NULL)
         {
-            signal.stop_loss = signal.entry_price - m_config->GetStopLoss() * point;
-            signal.take_profit = signal.entry_price + m_config->GetTakeProfit() * point;
+            signal.stop_loss = signal.entry_price - m_config.GetStopLoss() * point;
+            signal.take_profit = signal.entry_price + m_config.GetTakeProfit() * point;
         }
         else
         {
@@ -192,7 +192,7 @@ SSignal CMAStrategy::CheckSignal()
         m_stats.last_signal_time = signal.signal_time;
 
         if(m_logger != NULL)
-            m_logger->Info(signal.reason);
+            m_logger.Info(signal.reason);
     }
     else if(!is_bullish && has_momentum)
     {
@@ -204,8 +204,8 @@ SSignal CMAStrategy::CheckSignal()
         double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
         if(m_config != NULL)
         {
-            signal.stop_loss = signal.entry_price + m_config->GetStopLoss() * point;
-            signal.take_profit = signal.entry_price - m_config->GetTakeProfit() * point;
+            signal.stop_loss = signal.entry_price + m_config.GetStopLoss() * point;
+            signal.take_profit = signal.entry_price - m_config.GetTakeProfit() * point;
         }
         else
         {
@@ -221,7 +221,7 @@ SSignal CMAStrategy::CheckSignal()
         m_stats.last_signal_time = signal.signal_time;
 
         if(m_logger != NULL)
-            m_logger->Info(signal.reason);
+            m_logger.Info(signal.reason);
     }
 
     return signal;
@@ -246,7 +246,7 @@ bool CMAStrategy::ShouldExit(SPositionInfo& position)
     if(position.type == POSITION_TYPE_BUY && rsi[0] > m_rsi_overbought)
     {
         if(m_logger != NULL)
-            m_logger->Info("Long position exit due to RSI overbought: " + DoubleToString(rsi[0], 1));
+            m_logger.Info("Long position exit due to RSI overbought: " + DoubleToString(rsi[0], 1));
         return true;
     }
 
@@ -254,7 +254,7 @@ bool CMAStrategy::ShouldExit(SPositionInfo& position)
     if(position.type == POSITION_TYPE_SELL && rsi[0] < m_rsi_oversold)
     {
         if(m_logger != NULL)
-            m_logger->Info("Short position exit due to RSI oversold: " + DoubleToString(rsi[0], 1));
+            m_logger.Info("Short position exit due to RSI oversold: " + DoubleToString(rsi[0], 1));
         return true;
     }
 

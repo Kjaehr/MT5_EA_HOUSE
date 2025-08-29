@@ -117,7 +117,7 @@ CStrategyBase::~CStrategyBase()
 {
     if(m_logger != NULL)
     {
-        m_logger->Info("Strategy " + m_name + " destroyed");
+        m_logger.Info("Strategy " + m_name + " destroyed");
     }
 }
 
@@ -178,15 +178,15 @@ bool CStrategyBase::ValidateMarketConditions()
     double spread_points = 0;
     if(m_trade_manager != NULL)
     {
-        spread_points = m_trade_manager->GetSpreadPoints();
+        spread_points = m_trade_manager.GetSpreadPoints();
     }
 
-    if(m_config != NULL && spread_points > m_config->GetMaxSpreadPoints())
+    if(m_config != NULL && spread_points > m_config.GetMaxSpreadPoints())
     {
         if(m_logger != NULL)
         {
-            m_logger->Warning(StringFormat("Spread too wide: %.1f points (max: %.1f)",
-                             spread_points, m_config->GetMaxSpreadPoints()));
+            m_logger.Warning(StringFormat("Spread too wide: %.1f points (max: %.1f)",
+                             spread_points, m_config.GetMaxSpreadPoints()));
         }
         return false;
     }
@@ -217,15 +217,15 @@ void CStrategyBase::PrintStatistics()
 {
     if(m_logger != NULL)
     {
-        m_logger->Info("=== " + m_name + " STATISTICS ===");
-        m_logger->Info("Total Signals: " + IntegerToString(m_stats.total_signals));
-        m_logger->Info("Successful Trades: " + IntegerToString(m_stats.successful_trades));
-        m_logger->Info("Failed Trades: " + IntegerToString(m_stats.failed_trades));
-        m_logger->Info("Win Rate: " + DoubleToString(m_stats.win_rate, 2) + "%");
-        m_logger->Info("Profit Factor: " + DoubleToString(m_stats.profit_factor, 2));
-        m_logger->Info("Total Profit: " + DoubleToString(m_stats.total_profit, 2));
-        m_logger->Info("Total Loss: " + DoubleToString(m_stats.total_loss, 2));
-        m_logger->Info("========================");
+        m_logger.Info("=== " + m_name + " STATISTICS ===");
+        m_logger.Info("Total Signals: " + IntegerToString(m_stats.total_signals));
+        m_logger.Info("Successful Trades: " + IntegerToString(m_stats.successful_trades));
+        m_logger.Info("Failed Trades: " + IntegerToString(m_stats.failed_trades));
+        m_logger.Info("Win Rate: " + DoubleToString(m_stats.win_rate, 2) + "%");
+        m_logger.Info("Profit Factor: " + DoubleToString(m_stats.profit_factor, 2));
+        m_logger.Info("Total Profit: " + DoubleToString(m_stats.total_profit, 2));
+        m_logger.Info("Total Loss: " + DoubleToString(m_stats.total_loss, 2));
+        m_logger.Info("========================");
     }
 }
 

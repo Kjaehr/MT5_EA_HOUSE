@@ -51,6 +51,7 @@ protected:
     CTradeManager*    m_trade_manager;    // Trade manager reference
     SStrategyStats    m_stats;            // Strategy statistics
     bool              m_enabled;          // Strategy enabled flag
+    bool              m_is_initialized;   // Initialization status
 
     //--- Internal methods
     virtual void      UpdateStatistics(bool trade_success, double profit);
@@ -70,8 +71,8 @@ public:
     bool              IsEnabled() { return m_enabled; }
 
     //--- Strategy interface (must be implemented by derived classes)
-    virtual bool      Initialize() = 0;
-    virtual void      Deinitialize() = 0;
+    virtual bool      Initialize();
+    virtual void      Deinitialize();
     virtual SSignal   CheckSignal() = 0;
     virtual bool      ShouldExit(SPositionInfo& position) = 0;
 
@@ -90,6 +91,7 @@ public:
     //--- Utility methods
     virtual string    GetStrategyInfo();
     virtual void      OnTick() {}  // Optional tick processing
+    virtual void      OnBar() {}   // Optional bar processing
     virtual void      OnTimer() {} // Optional timer processing
 };
 
@@ -105,6 +107,7 @@ CStrategyBase::CStrategyBase(string name, string symbol, ENUM_TIMEFRAMES timefra
     m_config = NULL;
     m_trade_manager = NULL;
     m_enabled = true;
+    m_is_initialized = false;
 
     // Initialize statistics
     ResetStatistics();
@@ -227,6 +230,29 @@ void CStrategyBase::PrintStatistics()
         m_logger.Info("Total Loss: " + DoubleToString(m_stats.total_loss, 2));
         m_logger.Info("========================");
     }
+}
+
+//+------------------------------------------------------------------+
+//| Initialize strategy (base implementation)                       |
+//+------------------------------------------------------------------+
+bool CStrategyBase::Initialize()
+{
+    if(m_logger != NULL)
+        m_logger.Info("Initializing strategy: " + m_name);
+
+    m_is_initialized = true;
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| Deinitialize strategy (base implementation)                     |
+//+------------------------------------------------------------------+
+void CStrategyBase::Deinitialize()
+{
+    if(m_logger != NULL)
+        m_logger.Info("Deinitializing strategy: " + m_name);
+
+    m_is_initialized = false;
 }
 
 //+------------------------------------------------------------------+

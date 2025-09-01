@@ -173,10 +173,17 @@ SSignal CMAStrategy::CheckSignal()
 
         // Calculate SL/TP based on config
         double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
+        double min_stop_level = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * point;
+
         if(m_config != NULL)
         {
-            signal.stop_loss = signal.entry_price - m_config.GetStopLoss() * point;
-            signal.take_profit = signal.entry_price + m_config.GetTakeProfit() * point;
+            // Ensure SL/TP distances are larger than minimum stop level with very large buffer for DAX
+            double sl_distance = MathMax(m_config.GetStopLoss() * point, min_stop_level + 50 * point);
+            double tp_distance = MathMax(m_config.GetTakeProfit() * point, min_stop_level + 50 * point);
+
+            signal.stop_loss = signal.entry_price - sl_distance;
+            signal.take_profit = signal.entry_price + tp_distance;
+
         }
         else
         {
@@ -185,7 +192,7 @@ SSignal CMAStrategy::CheckSignal()
         }
 
         signal.confidence = 0.7;
-        signal.reason = StringFormat("MA Long - FastMA:%.5f SlowMA:%.5f RSI:%.1f",
+        signal.reason = StringFormat("MA LONG: FastMA=%.5f SlowMA=%.5f RSI=%.1f",
                                     ma_fast[0], ma_slow[0], rsi[0]);
 
         m_stats.total_signals++;
@@ -202,10 +209,18 @@ SSignal CMAStrategy::CheckSignal()
 
         // Calculate SL/TP based on config
         double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
+        double min_stop_level = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * point;
+
         if(m_config != NULL)
         {
-            signal.stop_loss = signal.entry_price + m_config.GetStopLoss() * point;
-            signal.take_profit = signal.entry_price - m_config.GetTakeProfit() * point;
+            // Ensure SL/TP distances are larger than minimum stop level with very large buffer for DAX
+            double sl_distance = MathMax(m_config.GetStopLoss() * point, min_stop_level + 50 * point);
+            double tp_distance = MathMax(m_config.GetTakeProfit() * point, min_stop_level + 50 * point);
+
+            signal.stop_loss = signal.entry_price + sl_distance;
+            signal.take_profit = signal.entry_price - tp_distance;
+
+
         }
         else
         {
@@ -214,7 +229,7 @@ SSignal CMAStrategy::CheckSignal()
         }
 
         signal.confidence = 0.7;
-        signal.reason = StringFormat("MA Short - FastMA:%.5f SlowMA:%.5f RSI:%.1f",
+        signal.reason = StringFormat("MA SHORT: FastMA=%.5f SlowMA=%.5f RSI=%.1f",
                                     ma_fast[0], ma_slow[0], rsi[0]);
 
         m_stats.total_signals++;
@@ -298,9 +313,9 @@ bool CMAStrategy::CheckMASignal(double &ma_fast[], double &ma_slow[], bool &is_b
 //+------------------------------------------------------------------+
 bool CMAStrategy::CheckRSIFilter(double &rsi[], bool is_long_signal)
 {
-    // More lenient RSI filter
-    bool rsi_not_extreme_high = (rsi[0] < m_rsi_overbought);
-    bool rsi_not_extreme_low = (rsi[0] > m_rsi_oversold);
+    // Strict RSI filter to reduce bad trades
+    bool rsi_not_extreme_high = (rsi[0] < 70.0);  // More strict for long signals
+    bool rsi_not_extreme_low = (rsi[0] > 30.0);   // More strict for short signals
 
     if(is_long_signal)
         return rsi_not_extreme_high;

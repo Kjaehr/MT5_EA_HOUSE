@@ -160,7 +160,7 @@ void CConfigManager::SetDefaults()
     m_config.minutes_between_trades = 10;
     m_config.max_spread_points = 50.0;
     m_config.use_breakout_strategy = true;
-    m_config.use_both_strategies = false;
+    m_config.use_both_strategies = true;  // FIXED: Enable both strategies by default
     m_config.use_scalping_mode = false;
     m_config.rsi_period = 9;
     m_config.ma_fast = 5;

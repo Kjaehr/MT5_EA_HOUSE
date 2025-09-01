@@ -163,16 +163,16 @@ SSignal CBreakoutStrategy::CheckSignal()
     double retest_buffer_price = m_retest_buffer * point;
 
     //--- LONG: Previous bar closed above breakout_high, current bar retests and closes up
-    bool long_breakout = close[1] > breakout_high;
+    bool long_breakout = close[1] > breakout_high;  // Previous bar broke above
     bool long_retest = low[0] <= (breakout_high + retest_buffer_price) &&
-                       low[0] >= (breakout_high - retest_buffer_price);
-    bool long_close_up = close[0] > open[0];
+                       low[0] >= (breakout_high - retest_buffer_price);  // Current bar retested
+    bool long_close_up = close[0] > open[0];  // Current bar closed up
 
     //--- SHORT: Previous bar closed below breakout_low, current bar retests and closes down
-    bool short_breakout = close[1] < breakout_low;
+    bool short_breakout = close[1] < breakout_low;  // Previous bar broke below
     bool short_retest = high[0] >= (breakout_low - retest_buffer_price) &&
-                        high[0] <= (breakout_low + retest_buffer_price);
-    bool short_close_down = close[0] < open[0];
+                        high[0] <= (breakout_low + retest_buffer_price);  // Current bar retested
+    bool short_close_down = close[0] < open[0];  // Current bar closed down
 
     if(long_breakout && long_retest && long_close_up && CheckTrendBias(true))
     {
@@ -182,15 +182,16 @@ SSignal CBreakoutStrategy::CheckSignal()
         signal.stop_loss = breakout_low - 2.0 * point;
         signal.take_profit = CalculateRangeTP(signal.entry_price, range, true);
         signal.confidence = 0.8;
-        signal.reason = StringFormat("Long breakout retest - Range: %.1f points", range/point);
+        signal.reason = StringFormat("BREAKOUT LONG: Range=%.1f points, High=%.5f Retest=%.5f",
+                                     range/point, breakout_high, low[0]);
 
         m_stats.total_signals++;
         m_stats.last_signal_time = signal.signal_time;
 
         if(m_logger != NULL)
         {
-            m_logger.Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
-                          signal.entry_price, signal.stop_loss, signal.take_profit));
+            m_logger.Info(signal.reason + StringFormat(" SL=%.5f TP=%.5f",
+                          signal.stop_loss, signal.take_profit));
         }
     }
     else if(short_breakout && short_retest && short_close_down && CheckTrendBias(false))
@@ -201,15 +202,16 @@ SSignal CBreakoutStrategy::CheckSignal()
         signal.stop_loss = breakout_high + 2.0 * point;
         signal.take_profit = CalculateRangeTP(signal.entry_price, range, false);
         signal.confidence = 0.8;
-        signal.reason = StringFormat("Short breakout retest - Range: %.1f points", range/point);
+        signal.reason = StringFormat("BREAKOUT SHORT: Range=%.1f points, Low=%.5f Retest=%.5f",
+                                     range/point, breakout_low, high[0]);
 
         m_stats.total_signals++;
         m_stats.last_signal_time = signal.signal_time;
 
         if(m_logger != NULL)
         {
-            m_logger.Info(signal.reason + StringFormat(" Entry:%.5f SL:%.5f TP:%.5f",
-                          signal.entry_price, signal.stop_loss, signal.take_profit));
+            m_logger.Info(signal.reason + StringFormat(" SL=%.5f TP=%.5f",
+                          signal.stop_loss, signal.take_profit));
         }
     }
 

@@ -463,9 +463,26 @@ bool CheckIndicatorSignals(double ask, double bid)
     bool ma_momentum_up = (ma_fast[0] > ma_fast[1] && ma_slow[0] >= ma_slow[1]);
     bool ma_momentum_down = (ma_fast[0] < ma_fast[1] && ma_slow[0] <= ma_slow[1]);
 
-    // More lenient RSI filter
-    bool rsi_not_extreme_high = (rsi[0] < 80);
-    bool rsi_not_extreme_low = (rsi[0] > 20);
+    // OPTIMIZED RSI filter - symmetric thresholds for better short performance
+    bool rsi_not_extreme_high, rsi_not_extreme_low;
+
+    if(InpUseSymmetricRSI)
+    {
+        // SYMMETRIC: 25 points from center (50) in both directions
+        rsi_not_extreme_high = (rsi[0] < 75);  // For longs (was 80)
+        rsi_not_extreme_low = (rsi[0] > 25);   // For shorts (was 20)
+
+        if(InpVerboseLogging && (rsi[0] > 75 || rsi[0] < 25))
+        {
+            Print("RSI FILTER: RSI=", rsi[0], " (Symmetric thresholds: 25/75)");
+        }
+    }
+    else
+    {
+        // LEGACY: Original asymmetric thresholds
+        rsi_not_extreme_high = (rsi[0] < 80);
+        rsi_not_extreme_low = (rsi[0] > 20);
+    }
 
     // Entry conditions - maximum opportunities
     if((ma_bullish && ma_momentum_up) && rsi_not_extreme_high)

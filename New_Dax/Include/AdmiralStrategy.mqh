@@ -5,6 +5,7 @@
 #property copyright "DAX Scalper EA"
 #property version   "1.00"
 
+#include "SignalStructures.mqh"
 #include "AdmiralPivotPoints.mqh"
 #include "MACDSignal.mqh"
 #include "StochasticSignal.mqh"
@@ -15,55 +16,7 @@
 #include "DeterministicSignalStrength.mqh"
 #include "PivotZoneManager.mqh"
 
-//+------------------------------------------------------------------+
-//| Signal structure                                               |
-//+------------------------------------------------------------------+
-struct SAdmiralSignal
-{
-    bool              is_valid;
-    bool              is_long;
-    double            entry_price;
-    double            stop_loss;
-    double            take_profit;
-    double            signal_strength;
-    string            signal_description;
 
-    // Default constructor
-    SAdmiralSignal()
-    {
-        is_valid = false;
-        is_long = false;
-        entry_price = 0.0;
-        stop_loss = 0.0;
-        take_profit = 0.0;
-        signal_strength = 0.0;
-        signal_description = "";
-    }
-
-    // Copy constructor
-    SAdmiralSignal(const SAdmiralSignal &other)
-    {
-        is_valid = other.is_valid;
-        is_long = other.is_long;
-        entry_price = other.entry_price;
-        stop_loss = other.stop_loss;
-        take_profit = other.take_profit;
-        signal_strength = other.signal_strength;
-        signal_description = other.signal_description;
-    }
-
-    // Assignment operator
-    void operator=(const SAdmiralSignal &other)
-    {
-        is_valid = other.is_valid;
-        is_long = other.is_long;
-        entry_price = other.entry_price;
-        stop_loss = other.stop_loss;
-        take_profit = other.take_profit;
-        signal_strength = other.signal_strength;
-        signal_description = other.signal_description;
-    }
-};
 
 //+------------------------------------------------------------------+
 //| Admiral Strategy Class                                         |
@@ -104,7 +57,11 @@ private:
     // Signal data
     SAdmiralSignal    m_current_signal;
     datetime          m_last_signal_time;
-    
+
+    // Daily tracking
+    int               m_daily_trades;          // Trades today
+    datetime          m_last_daily_reset;      // Last daily reset time
+
     bool              m_initialized;
 
 public:
@@ -166,6 +123,9 @@ public:
     string            GetDetailedSignalInfo();
     string            GetAdvancedComponentsStatus();
 
+    //--- Trade tracking
+    void              RegisterTradeExecution(); // Call when a trade is actually executed
+
     //--- Component access
     CTradingRegimeManager* GetRegimeManager() const { return m_regime_manager; }
 
@@ -218,7 +178,11 @@ CAdmiralStrategy::CAdmiralStrategy(string symbol, ENUM_TIMEFRAMES timeframe,
     // Initialize signal data
     ResetSignal(m_current_signal);
     m_last_signal_time = 0;
-    
+
+    // Initialize daily tracking
+    m_daily_trades = 0;
+    m_last_daily_reset = 0;
+
     m_initialized = false;
 }
 
@@ -1447,4 +1411,25 @@ bool CAdmiralStrategy::ShouldMoveToBreakeven(ulong ticket, double entry_price, d
     double breakeven_threshold = m_regime_manager.GetBreakevenThreshold(current_regime);
 
     return current_profit_r >= breakeven_threshold;
+}
+
+//+------------------------------------------------------------------+
+//| Register Trade Execution                                        |
+//+------------------------------------------------------------------+
+void CAdmiralStrategy::RegisterTradeExecution()
+{
+    // Check daily reset
+    MqlDateTime dt;
+    TimeToStruct(TimeCurrent(), dt);
+    datetime today = StringToTime(StringFormat("%04d.%02d.%02d 00:00:00", dt.year, dt.mon, dt.day));
+
+    if(m_last_daily_reset != today)
+    {
+        m_daily_trades = 0;
+        m_last_daily_reset = today;
+        Print("AdmiralStrategy: Daily reset");
+    }
+
+    m_daily_trades++;
+    Print("AdmiralStrategy: Trade registered (", m_daily_trades, " today)");
 }

@@ -695,14 +695,33 @@ void CTradingRegimeManager::CheckDailyReset()
 //+------------------------------------------------------------------+
 ENUM_TRADING_REGIME CTradingRegimeManager::DetermineRegimeFromTime(datetime current_time)
 {
+    MqlDateTime dt;
+    TimeToStruct(current_time, dt);
+    int current_minutes = dt.hour * 60 + dt.min;
+
+    Print("TradingRegimeManager: DetermineRegimeFromTime - Current time: ", TimeToString(current_time),
+          " (", dt.hour, ":", dt.min, " = ", current_minutes, " minutes)");
+
     // Check each regime
     for(int i = REGIME_TRENDING; i <= REGIME_QUIET; i++)
     {
+        int start_minutes = m_regimes[i].start_hour * 60 + m_regimes[i].start_minute;
+        int end_minutes = m_regimes[i].end_hour * 60 + m_regimes[i].end_minute;
+
+        Print("  Checking ", EnumToString((ENUM_TRADING_REGIME)i), ": ",
+              m_regimes[i].start_hour, ":", m_regimes[i].start_minute, "-",
+              m_regimes[i].end_hour, ":", m_regimes[i].end_minute,
+              " (", start_minutes, "-", end_minutes, " minutes)");
+
         if(IsWithinRegimeHours(m_regimes[i], current_time))
+        {
+            Print("  -> MATCH! Returning ", EnumToString((ENUM_TRADING_REGIME)i));
             return (ENUM_TRADING_REGIME)i;
+        }
     }
 
-    return REGIME_NONE;
+    Print("  -> NO MATCH! Returning REGIME_RANGING as fallback");
+    return REGIME_RANGING;
 }
 
 //+------------------------------------------------------------------+
@@ -717,7 +736,17 @@ bool CTradingRegimeManager::IsWithinRegimeHours(const SRegimeConfig &config, dat
     int start_minutes = config.start_hour * 60 + config.start_minute;
     int end_minutes = config.end_hour * 60 + config.end_minute;
 
-    return (current_minutes >= start_minutes && current_minutes < end_minutes);
+    // Handle overnight periods (e.g., 17:00-09:05)
+    if(end_minutes < start_minutes)
+    {
+        // Overnight period: current time is either after start OR before end (inclusive)
+        return (current_minutes >= start_minutes || current_minutes <= end_minutes);
+    }
+    else
+    {
+        // Normal period: current time is between start and end (inclusive)
+        return (current_minutes >= start_minutes && current_minutes <= end_minutes);
+    }
 }
 
 //+------------------------------------------------------------------+

@@ -8,6 +8,7 @@
 
 #include <Trade/Trade.mqh>
 #include "Include/AdmiralStrategy.mqh"
+#include "Include/StrategyManager.mqh"
 
 //--- Input parameters
 input group "=== Strategy Settings ==="
@@ -50,15 +51,72 @@ input int InpEndHour = 16;                             // Trading end hour
 input bool InpTradeOnFriday = false;                   // Allow trading on Friday
 
 input group "=== Advanced Features ==="
-input bool InpUseRegimeBasedTrading = true;            // Enable regime-based trading
+input bool InpUseRegimeBasedTrading = false;           // Enable regime-based trading (DISABLED for TrendFollowing focus)
 input bool InpUseH4BiasFilter = true;                  // Enable H4 bias filter
 input bool InpUseDeterministicSignals = true;          // Enable deterministic signal strength
 input bool InpUsePivotZones = true;                    // Enable pivot zones instead of lines
 input bool InpUseAdvancedRiskManagement = true;        // Enable advanced risk management
 input bool InpUseNewsFilter = true;                    // Enable high impact news filtering
 
+input group "=== Strategy Manager ==="
+input bool InpUseStrategyManager = false;              // Enable multi-strategy management
+input bool InpUseSignalCombination = false;            // Enable signal combination from multiple strategies
+input double InpMinCombinedStrength = 0.7;             // Minimum combined signal strength (0.0-1.0)
+input bool InpRequireConsensus = false;                // Require consensus from multiple strategies
+input int InpMinConsensusCount = 2;                    // Minimum strategies for consensus (2-4)
+
+input group "=== Individual Strategy Controls ==="
+input bool InpEnableAdmiralStrategy = false;           // Enable Admiral Pivot Points Strategy
+input bool InpEnableTrendFollowingStrategy = true;     // Enable Trend Following Strategy
+input bool InpEnableBreakoutStrategy = false;          // Enable Breakout Strategy (future)
+input bool InpEnableMeanReversionStrategy = false;     // Enable Mean Reversion Strategy (future)
+input bool InpEnableMomentumStrategy = false;          // Enable Momentum Strategy (future)
+
+input group "=== Strategy Weights ==="
+input double InpAdmiralWeight = 1.0;                   // Admiral strategy weight (0.0-2.0)
+input double InpTrendFollowingWeight = 0.9;            // Trend Following strategy weight (0.0-2.0)
+input double InpBreakoutWeight = 0.8;                  // Breakout strategy weight (0.0-2.0)
+input double InpMeanReversionWeight = 0.6;             // Mean Reversion strategy weight (0.0-2.0)
+input double InpMomentumWeight = 0.7;                  // Momentum strategy weight (0.0-2.0)
+
+input group "=== Trend Following Parameters ==="
+input double InpTrendADXThreshold = 18.0;              // ADX threshold for trend strength (10.0-30.0) - Lowered for more trades
+input double InpTrendMinStrength = 0.35;               // Minimum trend strength (0.1-0.8) - Lowered for more trades
+input double InpTrendMinSignalStrength = 0.45;         // Minimum signal strength (0.3-0.8) - Lowered for more trades
+input bool InpTrendUsePullbacks = false;               // Use pullback entries (disable for more immediate entries)
+input bool InpTrendUseBreakouts = false;               // Use breakout continuation logic (disable for simplicity)
+input bool InpTrendRequirePriceAboveBothEMAs = false;  // Require price above/below BOTH EMAs (strict mode)
+input bool InpTrendAllowEMACrossoverEntries = true;    // Allow entries when price is between EMAs but EMAs are crossed
+
+input group "=== Enhanced Trend Following Features ==="
+input bool InpTrendUseMACDConfirmation = false;        // Enable MACD confirmation (disable for more trades)
+input bool InpTrendUseMACDTrendMode = false;           // Use MACD trend mode vs signal mode
+input bool InpTrendUseMTFBiasFilter = true;            // Enable multi-timeframe bias filter
+input ENUM_TIMEFRAMES InpTrendMTFTimeframe = PERIOD_D1; // Higher timeframe for bias (H4/D1) - Changed to D1
+input double InpTrendMTFBiasStrengthMin = 0.1;         // Minimum MTF bias strength (0.0-1.0) - Lowered
+input bool InpTrendAllowAgainstBias = true;            // Allow trades against MTF bias (more permissive)
+input bool InpTrendUseRegimeDetection = false;         // Enable market regime detection (DISABLED for more trades)
+input bool InpTrendUseRegimeBasedSizing = false;       // Enable regime-based position sizing (DISABLED)
+input bool InpTrendUseRegimeBasedStops = false;        // Enable regime-based stop/target levels (DISABLED)
+
+input group "=== Advanced Risk Management ==="
+input bool InpTrendUseDynamicSizing = true;            // Enable dynamic position sizing
+input double InpTrendBaseRiskPercent = 1.0;            // Base risk per trade (%)
+input double InpTrendMaxRiskPercent = 2.0;             // Maximum risk per trade (%)
+input bool InpTrendUseCorrelationFilter = true;        // Enable correlation-based position limits
+input double InpTrendMaxCorrelation = 0.7;             // Maximum allowed correlation (0.0-1.0)
+input bool InpTrendUseDrawdownProtection = true;       // Enable drawdown-based position reduction
+input double InpTrendMaxDrawdownPercent = 10.0;        // Maximum drawdown before reduction (%)
+
+input group "=== Trend Following Trading Hours ==="
+input int InpTrendStartHour = 8;                       // TrendFollowing start hour (0-23)
+input int InpTrendEndHour = 20;                        // TrendFollowing end hour (0-23)
+input bool InpTrendTradeOnFriday = false;              // Allow TrendFollowing trading on Friday
+
 input group "=== General Settings ==="
-input long InpMagicNumber = 20241201;                  // Magic number
+input long InpMagicNumber = 20241201;                  // Base Magic number
+input long InpAdmiralMagicNumber = 20241201;           // Admiral strategy magic number
+input long InpTrendMagicNumber = 20241202;             // TrendFollowing strategy magic number
 input string InpTradeComment = "Admiral_DAX";          // Trade comment
 input int InpMaxSlippagePoints = 3;                    // Maximum slippage in points
 input bool InpVerboseLogging = true;                   // Enable verbose logging
@@ -66,6 +124,8 @@ input bool InpVerboseLogging = true;                   // Enable verbose logging
 //--- Global variables
 CTrade g_trade;
 CAdmiralStrategy* g_strategy = NULL;
+CTrendFollowingStrategy* g_trend_strategy = NULL;
+CStrategyManager* g_strategy_manager = NULL;
 
 // Trading state
 datetime g_last_bar_time = 0;
@@ -152,6 +212,196 @@ int OnInit()
     // Configure news filter after initialization
     g_strategy.SetUseNewsFilter(InpUseNewsFilter);
 
+    // Initialize TrendFollowingStrategy if StrategyManager is enabled
+    if(InpUseStrategyManager)
+    {
+        Print("=== INITIALIZING TREND FOLLOWING STRATEGY ===");
+        g_trend_strategy = new CTrendFollowingStrategy(_Symbol, InpTimeframe);
+        if(g_trend_strategy == NULL)
+        {
+            Print("ERROR: Failed to create TrendFollowingStrategy object");
+            delete g_strategy;
+            g_strategy = NULL;
+            return INIT_FAILED;
+        }
+        Print("TrendFollowingStrategy object created successfully");
+
+        // Configure Enhanced TrendFollowingStrategy parameters
+        STrendFollowingParams trend_params;
+
+        // Basic trend parameters
+        trend_params.adx_threshold = InpTrendADXThreshold;
+        trend_params.min_trend_strength = InpTrendMinStrength;
+        trend_params.use_pullback_entries = InpTrendUsePullbacks;
+        trend_params.enable_breakout_logic = InpTrendUseBreakouts;
+        trend_params.require_price_above_both_emas = InpTrendRequirePriceAboveBothEMAs;
+        trend_params.allow_ema_crossover_entries = InpTrendAllowEMACrossoverEntries;
+
+        // Enhanced MACD parameters
+        trend_params.use_macd_confirmation = InpTrendUseMACDConfirmation;
+        trend_params.use_macd_trend_mode = InpTrendUseMACDTrendMode;
+
+        // Multi-timeframe parameters
+        trend_params.use_mtf_bias_filter = InpTrendUseMTFBiasFilter;
+        trend_params.mtf_timeframe = InpTrendMTFTimeframe;
+        trend_params.mtf_bias_strength_min = InpTrendMTFBiasStrengthMin;
+        trend_params.allow_against_bias = InpTrendAllowAgainstBias;
+
+        // Market regime parameters
+        trend_params.use_regime_detection = InpTrendUseRegimeDetection;
+        trend_params.use_regime_based_sizing = InpTrendUseRegimeBasedSizing;
+        trend_params.use_regime_based_stops = InpTrendUseRegimeBasedStops;
+
+        // Advanced risk management
+        trend_params.use_dynamic_sizing = InpTrendUseDynamicSizing;
+        trend_params.base_risk_percent = InpTrendBaseRiskPercent;
+        trend_params.max_risk_percent = InpTrendMaxRiskPercent;
+        trend_params.use_correlation_filter = InpTrendUseCorrelationFilter;
+        trend_params.max_correlation = InpTrendMaxCorrelation;
+        trend_params.use_drawdown_protection = InpTrendUseDrawdownProtection;
+        trend_params.max_drawdown_percent = InpTrendMaxDrawdownPercent;
+
+        // Set trading hours for TrendFollowing strategy
+        trend_params.start_hour = InpTrendStartHour;
+        trend_params.end_hour = InpTrendEndHour;
+        trend_params.trade_on_friday = InpTrendTradeOnFriday;
+
+        g_trend_strategy.SetTrendParams(trend_params);
+
+        Print("Initializing TrendFollowingStrategy...");
+        if(!g_trend_strategy.Initialize())
+        {
+            Print("ERROR: Failed to initialize TrendFollowingStrategy");
+            delete g_trend_strategy;
+            g_trend_strategy = NULL;
+            delete g_strategy;
+            g_strategy = NULL;
+            return INIT_FAILED;
+        }
+        Print("TrendFollowingStrategy initialized successfully");
+
+        // Update risk parameters after initialization
+        SStrategyRiskParams risk_params = g_trend_strategy.GetRiskParams();
+        risk_params.min_signal_strength = InpTrendMinSignalStrength;
+        g_trend_strategy.SetRiskParams(risk_params);
+
+        Print("Enhanced TrendFollowingStrategy initialized successfully (OPTIMIZED FOR MORE TRADES):");
+        Print("  ADX threshold: ", InpTrendADXThreshold, ", Min strength: ", InpTrendMinStrength, ", Min signal: ", InpTrendMinSignalStrength);
+        Print("  EMA strict mode: ", InpTrendRequirePriceAboveBothEMAs, ", Allow crossover entries: ", InpTrendAllowEMACrossoverEntries);
+        Print("  MACD confirmation: ", InpTrendUseMACDConfirmation, ", MTF bias: ", InpTrendUseMTFBiasFilter, ", Regime detection: ", InpTrendUseRegimeDetection);
+        Print("  Pullbacks: ", InpTrendUsePullbacks, ", Breakouts: ", InpTrendUseBreakouts);
+        Print("  Dynamic sizing: ", InpTrendUseDynamicSizing, ", Base risk: ", InpTrendBaseRiskPercent, "%");
+        Print("Enhanced TrendFollowingStrategy object created: ", g_trend_strategy != NULL ? "YES" : "NO");
+    }
+
+    // Initialize StrategyManager if enabled
+    if(InpUseStrategyManager)
+    {
+        Print("=== INITIALIZING STRATEGY MANAGER ===");
+        g_strategy_manager = new CStrategyManager(_Symbol, InpTimeframe);
+        if(g_strategy_manager == NULL)
+        {
+            Print("ERROR: Failed to create StrategyManager object");
+            if(g_trend_strategy != NULL)
+            {
+                delete g_trend_strategy;
+                g_trend_strategy = NULL;
+            }
+            delete g_strategy;
+            g_strategy = NULL;
+            return INIT_FAILED;
+        }
+        Print("StrategyManager object created successfully");
+
+        // Set Admiral strategy in StrategyManager
+        if(!g_strategy_manager.SetAdmiralStrategy(g_strategy))
+        {
+            Print("ERROR: Failed to set Admiral strategy in StrategyManager");
+            delete g_strategy_manager;
+            g_strategy_manager = NULL;
+            if(g_trend_strategy != NULL)
+            {
+                delete g_trend_strategy;
+                g_trend_strategy = NULL;
+            }
+            delete g_strategy;
+            g_strategy = NULL;
+            return INIT_FAILED;
+        }
+
+        // Set TrendFollowingStrategy in StrategyManager
+        if(g_trend_strategy != NULL)
+        {
+            Print("Setting TrendFollowingStrategy in StrategyManager...");
+            if(!g_strategy_manager.SetTrendFollowingStrategy(g_trend_strategy))
+            {
+                Print("ERROR: Failed to set TrendFollowing strategy in StrategyManager");
+                delete g_strategy_manager;
+                g_strategy_manager = NULL;
+                delete g_trend_strategy;
+                g_trend_strategy = NULL;
+                delete g_strategy;
+                g_strategy = NULL;
+                return INIT_FAILED;
+            }
+            Print("TrendFollowingStrategy successfully set in StrategyManager");
+        }
+        else
+        {
+            Print("WARNING: TrendFollowingStrategy is NULL - not setting in StrategyManager");
+        }
+
+        // Configure StrategyManager
+        g_strategy_manager.SetUseCombination(InpUseSignalCombination);
+        g_strategy_manager.SetMinCombinedStrength(InpMinCombinedStrength);
+        g_strategy_manager.SetRequireConsensus(InpRequireConsensus, InpMinConsensusCount);
+
+        // Configure individual strategies
+        Print("=== CONFIGURING STRATEGIES ===");
+        Print("Admiral Strategy Input: ", InpEnableAdmiralStrategy);
+        Print("TrendFollowing Strategy Input: ", InpEnableTrendFollowingStrategy);
+
+        g_strategy_manager.EnableStrategy(STRATEGY_ADMIRAL, InpEnableAdmiralStrategy);
+        g_strategy_manager.EnableStrategy(STRATEGY_TREND_FOLLOWING, InpEnableTrendFollowingStrategy);
+        g_strategy_manager.EnableStrategy(STRATEGY_BREAKOUT, InpEnableBreakoutStrategy);
+        g_strategy_manager.EnableStrategy(STRATEGY_MEAN_REVERSION, InpEnableMeanReversionStrategy);
+        g_strategy_manager.EnableStrategy(STRATEGY_MOMENTUM, InpEnableMomentumStrategy);
+
+        Print("Admiral Strategy Enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_ADMIRAL));
+        Print("TrendFollowing Strategy Enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_TREND_FOLLOWING));
+
+        // Set strategy weights
+        g_strategy_manager.SetStrategyWeight(STRATEGY_ADMIRAL, InpAdmiralWeight);
+        g_strategy_manager.SetStrategyWeight(STRATEGY_TREND_FOLLOWING, InpTrendFollowingWeight);
+        g_strategy_manager.SetStrategyWeight(STRATEGY_BREAKOUT, InpBreakoutWeight);
+        g_strategy_manager.SetStrategyWeight(STRATEGY_MEAN_REVERSION, InpMeanReversionWeight);
+        g_strategy_manager.SetStrategyWeight(STRATEGY_MOMENTUM, InpMomentumWeight);
+
+        // Initialize StrategyManager
+        Print("Initializing StrategyManager...");
+        if(!g_strategy_manager.Initialize())
+        {
+            Print("ERROR: Failed to initialize StrategyManager");
+            delete g_strategy_manager;
+            g_strategy_manager = NULL;
+            if(g_trend_strategy != NULL)
+            {
+                delete g_trend_strategy;
+                g_trend_strategy = NULL;
+            }
+            delete g_strategy;
+            g_strategy = NULL;
+            return INIT_FAILED;
+        }
+        Print("StrategyManager initialized successfully");
+        Print("Signal combination: ", InpUseSignalCombination ? "ENABLED" : "DISABLED");
+        Print("Require consensus: ", InpRequireConsensus ? "ENABLED" : "DISABLED");
+
+        // Give indicators some time to initialize by waiting for a few ticks
+        Print("Waiting for indicators to initialize...");
+        Sleep(1000); // Wait 1 second for indicators to start calculating
+    }
+
     // Initialize daily reset
     ResetDailyCounters();
 
@@ -162,6 +412,18 @@ int OnInit()
     g_drawdown_multiplier = 1.0;
     ArrayResize(g_recent_trades_pnl, InpPerformanceLookback);
     ArrayInitialize(g_recent_trades_pnl, 0.0);
+
+    // FINAL STATUS CHECK
+    Print("=== FINAL INITIALIZATION STATUS ===");
+    Print("InpUseStrategyManager: ", InpUseStrategyManager);
+    Print("g_strategy_manager created: ", g_strategy_manager != NULL);
+    if(g_strategy_manager != NULL)
+    {
+        Print("Admiral strategy enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_ADMIRAL));
+        Print("TrendFollowing strategy enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_TREND_FOLLOWING));
+    }
+    Print("g_strategy created: ", g_strategy != NULL);
+    Print("g_trend_strategy created: ", g_trend_strategy != NULL);
 
     Print("Admiral DAX EA initialized successfully");
     Print("Trading timeframe: ", EnumToString(InpTimeframe));
@@ -178,7 +440,22 @@ void OnDeinit(const int reason)
 {
     Print("=== Admiral DAX EA Deinitialization ===");
 
-    // Clean up strategy
+    // Clean up StrategyManager first (it manages the strategy reference)
+    if(g_strategy_manager != NULL)
+    {
+        g_strategy_manager.Deinitialize();
+        delete g_strategy_manager;
+        g_strategy_manager = NULL;
+    }
+
+    // Clean up strategies (only if not managed by StrategyManager)
+    if(g_trend_strategy != NULL)
+    {
+        g_trend_strategy.Deinitialize();
+        delete g_trend_strategy;
+        g_trend_strategy = NULL;
+    }
+
     if(g_strategy != NULL)
     {
         g_strategy.Deinitialize();
@@ -211,6 +488,16 @@ void OnTick()
     // Check trading conditions
     if(!IsTradeAllowed())
         return;
+
+    // Debug: Check strategy status periodically
+    static datetime last_status_check = 0;
+    if(InpUseStrategyManager && g_strategy_manager != NULL && TimeCurrent() - last_status_check > 60) // Every minute
+    {
+        Print("=== STRATEGY STATUS CHECK ===");
+        Print("Admiral enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_ADMIRAL));
+        Print("TrendFollowing enabled: ", g_strategy_manager.IsStrategyEnabled(STRATEGY_TREND_FOLLOWING));
+        last_status_check = TimeCurrent();
+    }
 
     // Update strategy and check for signals
     ProcessSignals();
@@ -247,7 +534,19 @@ bool ValidateInputs()
 
     if(InpStartHour < 0 || InpStartHour > 23 || InpEndHour < 0 || InpEndHour > 23)
     {
-        Print("ERROR: Invalid trading hours. Must be between 0 and 23");
+        Print("ERROR: Invalid Admiral trading hours. Must be between 0 and 23");
+        return false;
+    }
+
+    if(InpTrendStartHour < 0 || InpTrendStartHour > 23 || InpTrendEndHour < 0 || InpTrendEndHour > 23)
+    {
+        Print("ERROR: Invalid TrendFollowing trading hours. Must be between 0 and 23");
+        return false;
+    }
+
+    if(InpAdmiralMagicNumber == InpTrendMagicNumber)
+    {
+        Print("ERROR: Admiral and TrendFollowing magic numbers must be different");
         return false;
     }
 
@@ -255,6 +554,76 @@ bool ValidateInputs()
     {
         Print("ERROR: Invalid max daily trades. Must be greater than 0");
         return false;
+    }
+
+    // Validate StrategyManager parameters
+    if(InpMinCombinedStrength < 0.0 || InpMinCombinedStrength > 1.0)
+    {
+        Print("ERROR: Invalid combined signal strength. Must be between 0.0 and 1.0");
+        return false;
+    }
+
+    if(InpMinConsensusCount < 1 || InpMinConsensusCount > 4)
+    {
+        Print("ERROR: Invalid consensus count. Must be between 1 and 4");
+        return false;
+    }
+
+    // Validate strategy weights
+    if(InpAdmiralWeight < 0.0 || InpAdmiralWeight > 2.0 ||
+       InpTrendFollowingWeight < 0.0 || InpTrendFollowingWeight > 2.0 ||
+       InpBreakoutWeight < 0.0 || InpBreakoutWeight > 2.0 ||
+       InpMeanReversionWeight < 0.0 || InpMeanReversionWeight > 2.0 ||
+       InpMomentumWeight < 0.0 || InpMomentumWeight > 2.0)
+    {
+        Print("ERROR: Invalid strategy weights. Must be between 0.0 and 2.0");
+        return false;
+    }
+
+    // Validate Trend Following parameters
+    if(InpTrendADXThreshold < 10.0 || InpTrendADXThreshold > 30.0)
+    {
+        Print("ERROR: Invalid ADX threshold. Must be between 10.0 and 30.0");
+        return false;
+    }
+
+    if(InpTrendMinStrength < 0.1 || InpTrendMinStrength > 0.8)
+    {
+        Print("ERROR: Invalid minimum trend strength. Must be between 0.1 and 0.8");
+        return false;
+    }
+
+    if(InpTrendMinSignalStrength < 0.3 || InpTrendMinSignalStrength > 0.8)
+    {
+        Print("ERROR: Invalid minimum signal strength. Must be between 0.3 and 0.8");
+        return false;
+    }
+
+    // Validate StrategyManager logic - at least one strategy must be enabled
+    if(InpUseStrategyManager)
+    {
+        if(!InpEnableAdmiralStrategy && !InpEnableTrendFollowingStrategy &&
+           !InpEnableBreakoutStrategy && !InpEnableMeanReversionStrategy && !InpEnableMomentumStrategy)
+        {
+            Print("ERROR: StrategyManager requires at least one strategy to be enabled");
+            return false;
+        }
+    }
+
+    if(InpRequireConsensus && InpMinConsensusCount > 1)
+    {
+        int enabled_strategies = 0;
+        if(InpEnableAdmiralStrategy) enabled_strategies++;
+        if(InpEnableTrendFollowingStrategy) enabled_strategies++;
+        if(InpEnableBreakoutStrategy) enabled_strategies++;
+        if(InpEnableMeanReversionStrategy) enabled_strategies++;
+        if(InpEnableMomentumStrategy) enabled_strategies++;
+
+        if(enabled_strategies < InpMinConsensusCount)
+        {
+            Print("ERROR: Not enough strategies enabled for consensus requirement");
+            return false;
+        }
     }
 
     return true;
@@ -327,13 +696,9 @@ bool IsTradeAllowed()
         }
     }
 
-    // Check if position already exists
-    if(PositionSelect(_Symbol))
-    {
-        if(InpVerboseLogging)
-            Print("DEBUG: Position already exists");
-        return false;
-    }
+    // Check if position already exists for the current strategy
+    // Note: This check is now handled per strategy with different magic numbers
+    // allowing multiple strategies to have simultaneous positions
 
     if(InpVerboseLogging)
         Print("DEBUG: Trading allowed");
@@ -341,49 +706,163 @@ bool IsTradeAllowed()
 }
 
 //+------------------------------------------------------------------+
+//| Check if strategy has existing position                         |
+//+------------------------------------------------------------------+
+bool HasStrategyPosition(long magic_number)
+{
+    for(int i = 0; i < PositionsTotal(); i++)
+    {
+        if(PositionGetTicket(i) > 0)
+        {
+            if(PositionGetString(POSITION_SYMBOL) == _Symbol &&
+               PositionGetInteger(POSITION_MAGIC) == magic_number)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//+------------------------------------------------------------------+
 //| Process trading signals                                        |
 //+------------------------------------------------------------------+
 void ProcessSignals()
 {
-    if(g_strategy == NULL)
+    SAdmiralSignal signal;
+
+    // ALWAYS log which path we're taking (even without verbose logging)
+    static int signal_count = 0;
+    signal_count++;
+
+    // Use StrategyManager if enabled, otherwise use Admiral strategy directly
+    if(InpUseStrategyManager && g_strategy_manager != NULL)
     {
-        Print("DEBUG: Strategy is NULL");
-        return;
-    }
+        Print("SIGNAL #", signal_count, ": Using StrategyManager - Admiral enabled: ",
+              g_strategy_manager.IsStrategyEnabled(STRATEGY_ADMIRAL));
 
-    if(InpVerboseLogging)
-        Print("DEBUG: Processing signals...");
+        // Get combined signal from StrategyManager
+        SCombinedSignal combined_signal = g_strategy_manager.GetCombinedSignal();
 
-    // Check for entry signal
-    SAdmiralSignal signal = g_strategy.CheckEntrySignal();
-
-    if(signal.is_valid)
-    {
-        if(InpVerboseLogging)
+        if(combined_signal.is_valid)
         {
-            Print("=== SIGNAL DETECTED ===");
-            Print("Direction: ", signal.is_long ? "LONG" : "SHORT");
-            Print("Strength: ", signal.signal_strength);
-            Print("Entry: ", signal.entry_price);
-            Print("Stop Loss: ", signal.stop_loss);
-            Print("Take Profit: ", signal.take_profit);
-            Print("Description: ", signal.signal_description);
+            // Convert combined signal to Admiral signal format
+            signal = g_strategy_manager.ConvertToAdmiralSignal(combined_signal);
+
+            Print("SIGNAL #", signal_count, ": StrategyManager generated signal from: ",
+                  combined_signal.contributing_strategies);
+
+            if(InpVerboseLogging)
+            {
+                Print("=== COMBINED SIGNAL DETECTED ===");
+                Print(g_strategy_manager.GetCombinedSignalInfo(combined_signal));
+            }
+
+            // Store the contributing strategies for trade execution
+            signal.signal_description = combined_signal.contributing_strategies;
+        }
+        else
+        {
+            Print("SIGNAL #", signal_count, ": StrategyManager - No valid signal");
+        }
+    }
+    else if(!InpUseStrategyManager)
+    {
+        Print("SIGNAL #", signal_count, ": Using LEGACY mode (StrategyManager disabled)");
+
+        // Legacy mode - use Admiral strategy directly only if StrategyManager is completely disabled
+        if(g_strategy == NULL)
+        {
+            Print("SIGNAL #", signal_count, ": ERROR - Strategy is NULL");
+            return;
         }
 
-        // Execute trade
-        ExecuteTrade(signal);
+        // Check for entry signal
+        signal = g_strategy.CheckEntrySignal();
+
+        if(signal.is_valid)
+        {
+            Print("SIGNAL #", signal_count, ": LEGACY Admiral signal detected");
+            if(InpVerboseLogging)
+            {
+                Print("=== ADMIRAL SIGNAL DETECTED (LEGACY) ===");
+                Print("Direction: ", signal.is_long ? "LONG" : "SHORT");
+                Print("Strength: ", signal.signal_strength);
+                Print("Entry: ", signal.entry_price);
+                Print("Stop Loss: ", signal.stop_loss);
+                Print("Take Profit: ", signal.take_profit);
+                Print("Description: ", signal.signal_description);
+            }
+        }
+        else
+        {
+            Print("SIGNAL #", signal_count, ": LEGACY - No Admiral signal");
+        }
     }
-    else if(InpVerboseLogging)
+    else
     {
-        Print("DEBUG: No valid signal detected");
+        // StrategyManager is enabled but not working properly
+        Print("SIGNAL #", signal_count, ": ERROR - StrategyManager enabled but not available");
+        Print("InpUseStrategyManager: ", InpUseStrategyManager);
+        Print("g_strategy_manager != NULL: ", g_strategy_manager != NULL);
+    }
+
+    // Execute trade if we have a valid signal
+    if(signal.is_valid)
+    {
+        Print("SIGNAL #", signal_count, ": EXECUTING TRADE");
+
+        // Determine strategy name from signal description
+        string strategy_name = "Admiral"; // Default
+        if(StringFind(signal.signal_description, "TrendFollowing") >= 0)
+        {
+            strategy_name = "TrendFollowing";
+        }
+        else if(StringFind(signal.signal_description, "Admiral+TrendFollowing") >= 0)
+        {
+            strategy_name = "Combined"; // For combined signals, we'll use Admiral magic number
+        }
+
+        ExecuteTrade(signal, strategy_name);
+    }
+    else
+    {
+        Print("SIGNAL #", signal_count, ": No trade executed");
     }
 }
 
 //+------------------------------------------------------------------+
 //| Execute trade based on signal                                 |
 //+------------------------------------------------------------------+
-void ExecuteTrade(const SAdmiralSignal &signal)
+void ExecuteTrade(const SAdmiralSignal &signal, string strategy_name = "Admiral")
 {
+    // Determine magic number based on strategy
+    long magic_number = InpAdmiralMagicNumber; // Default to Admiral
+    string trade_comment = InpTradeComment;
+
+    if(strategy_name == "TrendFollowing")
+    {
+        magic_number = InpTrendMagicNumber;
+        trade_comment = "Trend_DAX";
+    }
+    else if(strategy_name == "Combined")
+    {
+        magic_number = InpAdmiralMagicNumber; // Use Admiral magic for combined signals
+        trade_comment = "Combined_DAX";
+    }
+
+    // Check if this strategy already has a position
+    if(HasStrategyPosition(magic_number))
+    {
+        Print("TRADE REJECTED: ", strategy_name, " strategy already has a position (Magic: ", magic_number, ")");
+        return;
+    }
+
+    Print("EXECUTING TRADE for ", strategy_name, " strategy with Magic Number: ", magic_number);
+
+    // Set the magic number for this trade
+    g_trade.SetExpertMagicNumber(magic_number);
+
     // ENHANCED VALIDATION: Use new fail-safes
     if(!ValidateTradeWithFailsafes(signal))
     {
@@ -479,12 +958,12 @@ void ExecuteTrade(const SAdmiralSignal &signal)
     if(enhanced_signal.is_long)
     {
         result = g_trade.Buy(lot_size, _Symbol, enhanced_signal.entry_price,
-                           corrected_sl, enhanced_signal.take_profit, InpTradeComment);
+                           corrected_sl, enhanced_signal.take_profit, trade_comment);
     }
     else
     {
         result = g_trade.Sell(lot_size, _Symbol, enhanced_signal.entry_price,
-                            corrected_sl, enhanced_signal.take_profit, InpTradeComment);
+                            corrected_sl, enhanced_signal.take_profit, trade_comment);
     }
 
     if(result)
@@ -492,6 +971,30 @@ void ExecuteTrade(const SAdmiralSignal &signal)
         g_last_trade_time = TimeCurrent();
         g_daily_trades++;
         g_total_trades++;
+
+        // Register trade execution with the appropriate strategy
+        if(g_strategy_manager != NULL)
+        {
+            CTrendFollowingStrategy* trend_strategy = g_strategy_manager.GetTrendFollowingStrategy();
+            CAdmiralStrategy* admiral_strategy = g_strategy_manager.GetAdmiralStrategy();
+
+            if(strategy_name == "TrendFollowing" && trend_strategy != NULL)
+            {
+                trend_strategy.RegisterTradeExecution();
+            }
+            else if(strategy_name == "Admiral" && admiral_strategy != NULL)
+            {
+                admiral_strategy.RegisterTradeExecution();
+            }
+            else if(strategy_name == "Combined")
+            {
+                // For combined signals, register with both strategies
+                if(trend_strategy != NULL)
+                    trend_strategy.RegisterTradeExecution();
+                if(admiral_strategy != NULL)
+                    admiral_strategy.RegisterTradeExecution();
+            }
+        }
 
         // Track long vs short performance
         if(enhanced_signal.is_long)
@@ -612,14 +1115,21 @@ double CalculateLotSize(const SAdmiralSignal &signal)
 //+------------------------------------------------------------------+
 void ManagePositions()
 {
-    if(!PositionSelect(_Symbol))
-        return;
+    // Manage all positions for this symbol
+    for(int i = 0; i < PositionsTotal(); i++)
+    {
+        if(PositionGetTicket(i) == 0) continue;
 
-    long position_type = PositionGetInteger(POSITION_TYPE);
-    bool is_long = (position_type == POSITION_TYPE_BUY);
-    ulong ticket = PositionGetInteger(POSITION_TICKET);
-    double entry_price = PositionGetDouble(POSITION_PRICE_OPEN);
-    double current_price = is_long ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+        if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+
+        long position_type = PositionGetInteger(POSITION_TYPE);
+        bool is_long = (position_type == POSITION_TYPE_BUY);
+        ulong ticket = PositionGetInteger(POSITION_TICKET);
+        long magic = PositionGetInteger(POSITION_MAGIC);
+        double entry_price = PositionGetDouble(POSITION_PRICE_OPEN);
+        double current_price = is_long ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+        Print("Managing position: Ticket=", ticket, ", Magic=", magic, ", Type=", is_long ? "LONG" : "SHORT");
 
     // Advanced trailing stop management
     if(g_strategy != NULL)
@@ -660,6 +1170,7 @@ void ManagePositions()
             }
         }
     }
+    } // Close the for loop
 }
 
 //+------------------------------------------------------------------+
@@ -728,6 +1239,33 @@ void UpdateStatistics()
     }
 
     g_daily_pnl = current_daily_pnl;
+
+    // Update StrategyManager performance if enabled
+    // Note: This is a simplified approach. In a full implementation,
+    // we would track individual trade results and update performance accordingly
+    UpdateStrategyManagerPerformance();
+}
+
+//+------------------------------------------------------------------+
+//| Update StrategyManager Performance (Simplified)                |
+//+------------------------------------------------------------------+
+void UpdateStrategyManagerPerformance()
+{
+    // This is a placeholder for strategy performance updates
+    // In a full implementation, this would be called when individual trades close
+    // with specific trade results (profit/loss, strategy that generated the signal)
+
+    // For now, we'll update performance based on overall statistics
+    // when the StrategyManager is enabled
+    if(InpUseStrategyManager && g_strategy_manager != NULL)
+    {
+        // This is a simplified update - in practice, you would track
+        // which strategy generated each signal and update accordingly
+        // when trades close with their actual results
+
+        // Example: If we knew a trade was generated by Admiral strategy and closed with profit
+        // g_strategy_manager.UpdateStrategyPerformance(STRATEGY_ADMIRAL, true, profit_amount);
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -779,6 +1317,13 @@ void PrintFinalStatistics()
             Print("RECOMMENDATION: Longs underperforming - consider enhancements");
         else
             Print("PERFORMANCE: Long and short trades are balanced");
+    }
+
+    // StrategyManager performance report
+    if(InpUseStrategyManager && g_strategy_manager != NULL)
+    {
+        Print("\n=== STRATEGY MANAGER REPORT ===");
+        g_strategy_manager.PrintStrategyStatistics();
     }
 
     if(g_strategy != NULL)

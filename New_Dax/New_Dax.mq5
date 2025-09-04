@@ -58,6 +58,13 @@ input bool InpUsePivotZones = true;                    // Enable pivot zones ins
 input bool InpUseAdvancedRiskManagement = true;        // Enable advanced risk management
 input bool InpUseNewsFilter = true;                    // Enable high impact news filtering
 
+input group "=== Adaptive Position Sizing ==="
+input bool InpUseAdaptiveSizing = true;                // Use adaptive position sizing
+input double InpBaseRiskPercent = 1.0;                 // Base risk per trade (%)
+input double InpMaxRiskPercent = 2.0;                  // Maximum risk per trade (%)
+
+
+
 input group "=== Strategy Manager ==="
 input bool InpUseStrategyManager = false;              // Enable multi-strategy management
 input bool InpUseSignalCombination = false;            // Enable signal combination from multiple strategies
@@ -109,9 +116,14 @@ input bool InpTrendUseDrawdownProtection = true;       // Enable drawdown-based 
 input double InpTrendMaxDrawdownPercent = 10.0;        // Maximum drawdown before reduction (%)
 
 input group "=== Trend Following Trading Hours ==="
-input int InpTrendStartHour = 8;                       // TrendFollowing start hour (0-23)
-input int InpTrendEndHour = 20;                        // TrendFollowing end hour (0-23)
 input bool InpTrendTradeOnFriday = false;              // Allow TrendFollowing trading on Friday
+input bool InpTrendUseProfitableHours = true;          // Use specific profitable hours
+input int InpTrendSession1Start = 8;                   // Session 1 start hour (0-23)
+input int InpTrendSession1End = 9;                     // Session 1 end hour (0-23)
+input int InpTrendSession2Start = 10;                  // Session 2 start hour (0-23)
+input int InpTrendSession2End = 11;                    // Session 2 end hour (0-23)
+input int InpTrendSession3Start = 17;                  // Session 3 start hour (0-23)
+input int InpTrendSession3End = 20;                    // Session 3 end hour (0-23)
 
 input group "=== General Settings ==="
 input long InpMagicNumber = 20241201;                  // Base Magic number
@@ -262,9 +274,20 @@ int OnInit()
         trend_params.max_drawdown_percent = InpTrendMaxDrawdownPercent;
 
         // Set trading hours for TrendFollowing strategy
-        trend_params.start_hour = InpTrendStartHour;
-        trend_params.end_hour = InpTrendEndHour;
         trend_params.trade_on_friday = InpTrendTradeOnFriday;
+        trend_params.use_profitable_hours = InpTrendUseProfitableHours;
+        trend_params.session1_start = InpTrendSession1Start;
+        trend_params.session1_end = InpTrendSession1End;
+        trend_params.session2_start = InpTrendSession2Start;
+        trend_params.session2_end = InpTrendSession2End;
+        trend_params.session3_start = InpTrendSession3Start;
+        trend_params.session3_end = InpTrendSession3End;
+
+        // Set adaptive sizing parameters
+        trend_params.use_adaptive_sizing = InpUseAdaptiveSizing;
+        trend_params.use_dynamic_sizing = InpUseAdaptiveSizing; // Use same setting
+        trend_params.base_risk_percent = InpBaseRiskPercent;
+        trend_params.max_risk_percent = InpMaxRiskPercent;
 
         g_trend_strategy.SetTrendParams(trend_params);
 
@@ -538,9 +561,12 @@ bool ValidateInputs()
         return false;
     }
 
-    if(InpTrendStartHour < 0 || InpTrendStartHour > 23 || InpTrendEndHour < 0 || InpTrendEndHour > 23)
+    // Validate TrendFollowing session hours
+    if(InpTrendSession1Start < 0 || InpTrendSession1Start > 23 || InpTrendSession1End < 0 || InpTrendSession1End > 23 ||
+       InpTrendSession2Start < 0 || InpTrendSession2Start > 23 || InpTrendSession2End < 0 || InpTrendSession2End > 23 ||
+       InpTrendSession3Start < 0 || InpTrendSession3Start > 23 || InpTrendSession3End < 0 || InpTrendSession3End > 23)
     {
-        Print("ERROR: Invalid TrendFollowing trading hours. Must be between 0 and 23");
+        Print("ERROR: Invalid TrendFollowing session hours. All hours must be between 0 and 23");
         return false;
     }
 
@@ -642,22 +668,16 @@ bool IsTradeAllowed()
         return false;
     }
 
-    // Check trading hours
+    // Note: Trading hours are now handled by individual strategies
+    // This allows each strategy to have its own optimal trading times
+
+    // Check Friday trading (global setting)
     MqlDateTime dt;
     TimeToStruct(TimeCurrent(), dt);
-
-    if(dt.hour < InpStartHour || dt.hour >= InpEndHour)
-    {
-        if(InpVerboseLogging)
-            Print("DEBUG: Outside trading hours: ", dt.hour, " (allowed: ", InpStartHour, "-", InpEndHour, ")");
-        return false;
-    }
-
-    // Check Friday trading
     if(!InpTradeOnFriday && dt.day_of_week == 5) // Friday
     {
         if(InpVerboseLogging)
-            Print("DEBUG: Friday trading disabled");
+            Print("DEBUG: Friday trading disabled (global setting)");
         return false;
     }
 

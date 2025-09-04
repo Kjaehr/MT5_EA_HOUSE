@@ -567,10 +567,3 @@ v1.04 - Improved risk management
 **Kompatibilitet**: MetaTrader 5 Build 3815+
 **Symbol**: DAX (DE30, GER30, etc.)
 **Licens**: Proprietær - Kun til personlig brug
-
-
-
-Uge 1: Implementer sæsonale multipliers
-Uge 2: Test volatilitet-adaptiv sizing
-Uge 3: Forbedret trailing stops
-Uge 4: News-aware trading pauser

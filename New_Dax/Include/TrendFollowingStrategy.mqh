@@ -73,10 +73,20 @@ struct STrendFollowingParams
     double            rsi_overbought;          // RSI overbought level
 
     // Trading Hours Parameters
-    int               start_hour;              // Trading start hour (0-23)
-    int               end_hour;                // Trading end hour (0-23)
     bool              trade_on_friday;         // Allow trading on Friday
-    
+    bool              use_profitable_hours;    // Use specific profitable hours
+
+    // Profitable Time Windows
+    int               session1_start;          // Session 1 start hour (default 8)
+    int               session1_end;            // Session 1 end hour (default 9)
+    int               session2_start;          // Session 2 start hour (default 10)
+    int               session2_end;            // Session 2 end hour (default 11)
+    int               session3_start;          // Session 3 start hour (default 17)
+    int               session3_end;            // Session 3 end hour (default 20)
+
+    // Adaptive Position Sizing Parameters
+    bool              use_adaptive_sizing;     // Use adaptive position sizing
+
     // Constructor
     STrendFollowingParams()
     {
@@ -129,9 +139,22 @@ struct STrendFollowingParams
         rsi_overbought = 70.0;
 
         // Trading hours defaults
-        start_hour = 8;
-        end_hour = 20;
         trade_on_friday = false;
+        use_profitable_hours = true; // Use specific profitable hours by default
+
+        // Default profitable time windows
+        session1_start = 8;   // 08:00-08:59
+        session1_end = 9;
+        session2_start = 10;  // 10:00-10:59
+        session2_end = 11;
+        session3_start = 17;  // 17:00-19:59
+        session3_end = 20;
+
+        // Adaptive sizing defaults
+        use_adaptive_sizing = true;      // Enable adaptive position sizing
+        // base_risk_percent and max_risk_percent already set above
+
+
     }
 };
 
@@ -180,8 +203,10 @@ private:
     double            m_current_portfolio_risk; // Current portfolio risk exposure
     double            m_current_drawdown;      // Current drawdown percentage
     double            m_peak_equity;           // Peak equity for drawdown calculation
+    double            m_daily_start_equity;    // Equity at start of trading day
     int               m_consecutive_losses;    // Consecutive losing trades
     datetime          m_last_trade_time;       // Last trade time for correlation checks
+    datetime          m_last_drawdown_reset;   // Last time drawdown was reset
     
 public:
     //--- Constructor/Destructor
@@ -239,6 +264,8 @@ private:
     bool              CheckRegimeBasedEntry(bool is_long);
     bool              CheckPullbackEntry(bool is_long);
     bool              CheckBreakoutMomentum(bool is_long);
+    double            CalculateAdaptivePositionSize(bool is_long, double base_size);
+
 
     //--- Breakout Logic
     void              DetectBreakouts();
@@ -265,6 +292,7 @@ private:
     bool              CheckCorrelationLimits();
     bool              CheckDrawdownProtection();
     void              UpdateRiskMetrics();
+    void              CheckDrawdownReset();
     double            CalculateSwingBasedStopLoss(bool is_long, double entry_price);
 
     //--- Utility Methods
@@ -309,9 +337,11 @@ CTrendFollowingStrategy::CTrendFollowingStrategy(string symbol, ENUM_TIMEFRAMES 
     // Initialize enhanced risk management state
     m_current_portfolio_risk = 0.0;
     m_current_drawdown = 0.0;
-    m_peak_equity = 0.0;
+    m_peak_equity = AccountInfoDouble(ACCOUNT_EQUITY);
+    m_daily_start_equity = m_peak_equity;
     m_consecutive_losses = 0;
     m_last_trade_time = 0;
+    m_last_drawdown_reset = 0;
     
     // Set array properties
     ArraySetAsSeries(m_ema_fast_buffer, true);
@@ -434,6 +464,9 @@ bool CTrendFollowingStrategy::UpdateSignals()
     {
         DetectBreakouts();
     }
+
+    // Check for daily drawdown reset
+    CheckDrawdownReset();
 
     // Update risk metrics
     UpdateRiskMetrics();
@@ -1131,6 +1164,8 @@ bool CTrendFollowingStrategy::ShouldExit(bool is_long_position)
         }
     }
 
+
+
     return false;
 }
 
@@ -1353,6 +1388,8 @@ bool CTrendFollowingStrategy::CheckLongTrendConditions()
         }
     }
 
+
+
     // Check breakout momentum only if breakout logic is enabled
     Print("Enhanced TrendFollowingStrategy: Breakout logic enabled: ", m_params.enable_breakout_logic);
     if(m_params.enable_breakout_logic)
@@ -1485,6 +1522,8 @@ bool CTrendFollowingStrategy::CheckShortTrendConditions()
             return false;
         }
     }
+
+
 
     // Check breakout momentum only if breakout logic is enabled
     if(m_params.enable_breakout_logic && !CheckBreakoutMomentum(false))
@@ -1963,7 +2002,8 @@ bool CTrendFollowingStrategy::CheckDrawdownProtection()
     if(m_current_drawdown > m_params.max_drawdown_percent)
     {
         Print("Enhanced TrendFollowingStrategy: Trade blocked due to drawdown protection - ",
-              "Current drawdown: ", m_current_drawdown, "%, Max allowed: ", m_params.max_drawdown_percent, "%");
+              "Daily drawdown: ", m_current_drawdown, "%, Max allowed: ", m_params.max_drawdown_percent,
+              "% (Start equity: ", m_daily_start_equity, ", Current: ", AccountInfoDouble(ACCOUNT_EQUITY), ")");
         return false;
     }
 
@@ -1977,18 +2017,46 @@ void CTrendFollowingStrategy::UpdateRiskMetrics()
 {
     double current_equity = AccountInfoDouble(ACCOUNT_EQUITY);
 
-    // Update peak equity
+    // Update peak equity (only if higher than current peak)
     if(current_equity > m_peak_equity)
         m_peak_equity = current_equity;
 
-    // Calculate current drawdown
-    if(m_peak_equity > 0)
-        m_current_drawdown = ((m_peak_equity - current_equity) / m_peak_equity) * 100.0;
+    // Calculate current drawdown from daily start equity
+    if(m_daily_start_equity > 0)
+    {
+        // Calculate drawdown from start of day
+        double daily_drawdown = ((m_daily_start_equity - current_equity) / m_daily_start_equity) * 100.0;
+        m_current_drawdown = MathMax(0.0, daily_drawdown); // Only positive drawdown
+    }
     else
+    {
         m_current_drawdown = 0.0;
+    }
 
     // Update portfolio risk (simplified - would need position tracking in real implementation)
     m_current_portfolio_risk = 0.0; // This would be calculated based on open positions
+}
+
+//+------------------------------------------------------------------+
+//| Check for Daily Drawdown Reset                                |
+//+------------------------------------------------------------------+
+void CTrendFollowingStrategy::CheckDrawdownReset()
+{
+    MqlDateTime dt;
+    TimeToStruct(TimeCurrent(), dt);
+    datetime today = StringToTime(StringFormat("%04d.%02d.%02d 00:00:00", dt.year, dt.mon, dt.day));
+
+    if(m_last_drawdown_reset != today)
+    {
+        // Reset drawdown tracking for new day
+        double current_equity = AccountInfoDouble(ACCOUNT_EQUITY);
+        m_daily_start_equity = current_equity;
+        m_peak_equity = current_equity; // Reset peak equity to current equity
+        m_current_drawdown = 0.0;       // Reset drawdown to 0
+        m_last_drawdown_reset = today;
+
+        Print("Enhanced TrendFollowingStrategy: Daily drawdown reset - New peak equity: ", m_peak_equity);
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -2266,8 +2334,10 @@ string CTrendFollowingStrategy::GetStrategyInfo()
 
     // Risk management information
     info += "\n=== Risk Management ===\n";
-    info += StringFormat("Current Drawdown: %.2f%% (Max: %.2f%%)\n",
+    info += StringFormat("Daily Drawdown: %.2f%% (Max: %.2f%%)\n",
                         m_current_drawdown, m_params.max_drawdown_percent);
+    info += StringFormat("Daily Start Equity: %.2f, Current: %.2f\n",
+                        m_daily_start_equity, AccountInfoDouble(ACCOUNT_EQUITY));
     info += StringFormat("Consecutive Losses: %d\n", m_consecutive_losses);
     info += StringFormat("Dynamic Sizing: %s (Base: %.1f%%, Max: %.1f%%)\n",
                         m_params.use_dynamic_sizing ? "Enabled" : "Disabled",
@@ -2412,6 +2482,33 @@ bool CTrendFollowingStrategy::CheckRSIMomentumConfirmation(bool is_long)
 }
 
 //+------------------------------------------------------------------+
+//| Calculate Adaptive Position Size                              |
+//+------------------------------------------------------------------+
+double CTrendFollowingStrategy::CalculateAdaptivePositionSize(bool is_long, double base_size)
+{
+    if(!m_params.use_adaptive_sizing)
+        return base_size;
+
+    // Use existing signal strength calculation (0.0-1.0)
+    double signal_strength = CalculateSignalStrength(is_long);
+
+    // Convert to multiplier (0.5-2.0)
+    double strength_multiplier = 0.5 + (signal_strength * 1.5); // Maps 0.0-1.0 to 0.5-2.0
+
+    double adaptive_size = base_size * strength_multiplier;
+
+    // Ensure we don't exceed maximum risk
+    double max_size = AccountInfoDouble(ACCOUNT_EQUITY) * (m_params.max_risk_percent / 100.0);
+    adaptive_size = MathMin(adaptive_size, max_size);
+
+    Print("Enhanced TrendFollowingStrategy: Adaptive sizing - Signal strength: ",
+          DoubleToString(signal_strength, 3), ", Multiplier: ", DoubleToString(strength_multiplier, 2),
+          ", Base size: ", base_size, ", Adaptive size: ", adaptive_size);
+
+    return adaptive_size;
+}
+
+//+------------------------------------------------------------------+
 //| Calculate Fibonacci Level                                     |
 //+------------------------------------------------------------------+
 double CTrendFollowingStrategy::CalculateFibonacciLevel(double high, double low, double fib_level)
@@ -2444,11 +2541,30 @@ bool CTrendFollowingStrategy::IsWithinTradingHours()
     MqlDateTime dt;
     TimeToStruct(TimeCurrent(), dt);
 
-    // Check trading hours (inclusive end hour)
-    if(dt.hour < m_params.start_hour || dt.hour > m_params.end_hour)
+    bool in_trading_window = false;
+
+    if(m_params.use_profitable_hours)
     {
-        Print("TrendFollowingStrategy: Outside trading hours: ", dt.hour, " (allowed: ", m_params.start_hour, "-", m_params.end_hour, ")");
-        return false;
+        // Configurable profitable time windows
+        bool session1 = (dt.hour >= m_params.session1_start && dt.hour < m_params.session1_end);
+        bool session2 = (dt.hour >= m_params.session2_start && dt.hour < m_params.session2_end);
+        bool session3 = (dt.hour >= m_params.session3_start && dt.hour < m_params.session3_end);
+
+        in_trading_window = session1 || session2 || session3;
+
+        if(!in_trading_window)
+        {
+            Print("TrendFollowingStrategy: Outside profitable trading hours: ", dt.hour,
+                  " (allowed: ", m_params.session1_start, "-", m_params.session1_end,
+                  ", ", m_params.session2_start, "-", m_params.session2_end,
+                  ", ", m_params.session3_start, "-", m_params.session3_end, ")");
+            return false;
+        }
+    }
+    else
+    {
+        // Disabled mode: always allow trading (except Friday check)
+        in_trading_window = true;
     }
 
     // Check Friday trading

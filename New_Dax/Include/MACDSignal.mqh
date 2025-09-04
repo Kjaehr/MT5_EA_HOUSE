@@ -237,8 +237,8 @@ bool CMACDSignal::IsBullishSignal()
     if(!m_initialized)
         return false;
 
-    // Use MACD main line instead of histogram for (12,26,1) setup
-    return m_current_macd > 0.0;
+    // Simple and effective: MACD above signal line
+    return m_current_macd > m_current_signal;
 }
 
 //+------------------------------------------------------------------+
@@ -249,8 +249,8 @@ bool CMACDSignal::IsBearishSignal()
     if(!m_initialized)
         return false;
 
-    // Use MACD main line instead of histogram for (12,26,1) setup
-    return m_current_macd < 0.0;
+    // Simple and effective: MACD below signal line
+    return m_current_macd < m_current_signal;
 }
 
 //+------------------------------------------------------------------+

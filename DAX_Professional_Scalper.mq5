@@ -16,17 +16,17 @@
 //--- Input parameters based on tick data analysis
 input group "=== CORE STRATEGY SETTINGS ==="
 input double   LotSize = 0.01;                    // Base position size
-input int      StopLoss = 15;                     // Stop loss in points
-input int      TakeProfit = 25;                   // Take profit in points (1:1.67 R/R)
-input double   MaxSpreadPoints = 5.0;             // Max spread (adjusted for backtest data)
+input int      StopLoss = 700;                     // Stop loss in points
+input int      TakeProfit = 2000;                   // Take profit in points (1:1.67 R/R)
+input double   MaxSpreadPoints = 50;             // Max spread (adjusted for backtest data)
 input int      MagicNumber = 789456;              // Magic number
 
 input group "=== QUALITY FILTERS ==="
-input double   MinVolumeMultiplier = 0.5;         // Minimum volume vs average (realistic)
+input double   MinVolumeMultiplier = 0.2;         // Minimum volume vs average (realistic)
 input int      VolumeAnalysisPeriod = 20;         // Period for volume analysis
-input double   VolatilityThreshold = 0.5;         // Min volatility for entry (realistic)
-input int      ConsecutiveLossLimit = 3;          // Max consecutive losses before pause (increased)
-input int      CooldownMinutes = 60;              // Cooldown after loss limit (increased)
+input double   VolatilityThreshold = 0.8;         // Min volatility for entry (realistic)
+input int      ConsecutiveLossLimit = 5;          // Max consecutive losses before pause (increased)
+input int      CooldownMinutes = 30;              // Cooldown after loss limit (increased)
 input bool     OnlyExcellentSignals = false;      // Trade GOOD+ quality signals (more realistic)
 input bool     RequireConfluence = false;         // Require multiple confirmations (disabled for testing)
 input bool     UsePullbackEntries = true;         // Wait for pullbacks before entry

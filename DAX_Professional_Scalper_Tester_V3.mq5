@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
-//|                                    DAX_Professional_Scalper.mq5 |
-//|                           Professional DAX Scalping EA v2.0     |
-//|                    Built on real tick data analysis & edge      |
+//|                                    DAX_Professional_Scalper_V3.mq5 |
+//|                           Professional DAX Scalping EA v3.0     |
+//|                    Advanced Performance & Error Handling        |
 //+------------------------------------------------------------------+
-#property copyright "DAX Professional Scalper"
+#property copyright "DAX Professional Scalper V3"
 #property link      ""
-#property version   "2.00"
+#property version   "3.00"
 #property strict
 
 //--- Include files
@@ -19,7 +19,7 @@ input double   LotSize = 0.1;                    // Base position size
 input int      StopLoss = 700;                     // Stop loss in points
 input int      TakeProfit = 2000;                   // Take profit in points (1:1.67 R/R)
 input double   MaxSpreadPoints = 50;             // Max spread (adjusted for backtest data)
-input int      MagicNumber = 789456;              // Magic number
+input int      MagicNumber = 789458;              // Magic number (V3)
 
 input group "=== QUALITY FILTERS ==="
 input double   MinVolumeMultiplier = 0.2;        // Minimum volume vs average (backtest adjusted)
@@ -34,7 +34,7 @@ input bool     UseMomentumCheck = true;          // Require momentum alignment w
 input int      MomentumBars = 3;                  // Number of bars for momentum check
 input bool     UseTickVelocity = true;           // Use advanced tick velocity analysis
 input int      TickVelocityWindow = 20;          // Number of ticks for velocity analysis (increased)
-input double   MinTickVelocity = 15;             // Minimum tick velocity threshold (adjusted for DAX)
+input double   MinTickVelocity = 30;             // Minimum tick velocity threshold (adjusted for DAX)
 input bool     UseTickMicrostructure = true;     // Use tick microstructure analysis
 input int      TickPatternWindow = 15;           // Window for tick pattern analysis
 input double   TickAccelerationThreshold = 2.0;  // Tick acceleration threshold
@@ -53,13 +53,30 @@ input int      EuropeanEnd = 17;                  // European session end (CET)
 input bool     TradeUSOverlap = true;             // Enhanced trading 14:00-17:00
 input bool     UsePrimeHoursOnly = false;         // Trade only prime hours (9-12, 14-16)
 input int      MaxDailyTrades = 8;                // Maximum trades per day
-input double   MaxDailyRisk = 2.0;                // Maximum daily risk %
+input double   MaxDailyRisk = 15.0;                // Maximum daily risk %
 
 input group "=== RISK MANAGEMENT ==="
 input double   AccountRiskPercent = 0.5;          // Risk per trade as % of account
-input double   MaxDrawdownPercent = 5.0;          // Max drawdown before stop
+input double   MaxDrawdownPercent = 15.0;          // Max drawdown before stop
 input bool     UseAdaptivePositioning = true;     // Adapt position size to conditions
 input bool     EnableEmergencyStop = true;        // Emergency stop on major losses
+
+input group "=== PERFORMANCE OPTIMIZATIONS ==="
+input bool     EnablePerformanceMonitoring = true; // Monitor tick processing performance
+input bool     EnableMemoryOptimization = true;   // Optimize memory usage and array operations
+input int      ArrayReserveSize = 100;            // Reserve size for dynamic arrays
+input bool     EnableErrorHandling = true;        // Enhanced error handling and recovery
+
+input group "=== V3 ADVANCED OPTIMIZATIONS ==="
+input bool     EnableAdvancedErrorHandling = true; // Advanced error handling with retry logic
+input int      MaxRetryAttempts = 3;              // Maximum retry attempts for failed operations
+input int      RetryDelayMs = 100;                // Delay between retry attempts (milliseconds)
+input bool     EnableConnectionRecovery = true;   // Enable automatic connection recovery
+input int      ConnectionTimeoutSeconds = 30;     // Connection timeout in seconds
+input bool     EnableTickLevelOptimization = true; // Advanced tick analysis caching
+input int      TickCacheSize = 50;                // Number of ticks to cache for analysis
+input bool     EnableMultiTimeframeCaching = true; // Cache higher timeframe data
+input int      MTFCacheMinutes = 5;               // Minutes to cache MTF data
 
 //--- Global variables
 CTrade         trade;
@@ -100,6 +117,37 @@ double         g_tick_directional_bias = 0.0;
 int            g_consecutive_tick_direction = 0;
 double         g_tick_volume_weighted_price = 0.0;
 datetime       g_last_tick_analysis = 0;
+
+// Performance optimization variables
+ulong          g_tick_processing_time = 0;
+ulong          g_max_tick_processing_time = 0;
+int            g_slow_ticks_count = 0;
+datetime       g_last_performance_report = 0;
+datetime       g_last_memory_cleanup = 0;
+int            g_error_count = 0;
+
+// V3 Advanced error handling variables
+int            g_last_error_code = 0;
+datetime       g_last_error_time = 0;
+bool           g_connection_lost = false;
+datetime       g_connection_lost_time = 0;
+int            g_retry_count = 0;
+int            g_consecutive_errors = 0;
+
+// V3 Tick-level optimization variables
+double         g_tick_cache_prices[];
+ulong          g_tick_cache_volumes[];
+datetime       g_tick_cache_times[];
+int            g_tick_cache_index = 0;
+bool           g_tick_cache_initialized = false;
+double         g_cached_tick_velocity = 0.0;
+datetime       g_last_tick_analysis_update = 0;
+
+// V3 Multi-timeframe caching variables
+double         g_mtf_ema_m5 = 0.0;
+double         g_mtf_ema_m15 = 0.0;
+datetime       g_last_mtf_update = 0;
+bool           g_mtf_cache_valid = false;
 
 // Indicators
 int            g_atr_handle = INVALID_HANDLE;
@@ -145,41 +193,98 @@ enum ENUM_TICK_PATTERN
     TICK_PATTERN_CONSOLIDATION = 4
 };
 
+// V3 Error handling enums
+enum ENUM_ERROR_SEVERITY
+{
+    ERROR_SEVERITY_LOW = 0,
+    ERROR_SEVERITY_MEDIUM = 1,
+    ERROR_SEVERITY_HIGH = 2,
+    ERROR_SEVERITY_CRITICAL = 3
+};
+
+enum ENUM_CONNECTION_STATUS
+{
+    CONNECTION_OK = 0,
+    CONNECTION_LOST = 1,
+    CONNECTION_TIMEOUT = 2,
+    CONNECTION_RECOVERING = 3
+};
+
+// V3 Structures
+struct TickCacheData
+{
+    double price;
+    ulong volume;
+    datetime time;
+    double velocity;
+    bool is_valid;
+};
+
+struct MTFCacheData
+{
+    double ema_m5;
+    double ema_m15;
+    datetime last_update;
+    bool is_valid;
+};
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
-    Print("=== DAX Professional Scalper v2.0 Initializing ===");
-    
-    // Set trade parameters
-    trade.SetExpertMagicNumber(MagicNumber);
-    trade.SetMarginMode();
-    trade.SetTypeFillingBySymbol(_Symbol);
-    trade.SetDeviationInPoints(3); // Allow 3 points slippage
-    
-    // Initialize indicators
-    if(!InitializeIndicators())
+    Print("=== DAX Professional Scalper V3.0 Initializing ===");
+
+    // Initialize V3 advanced systems
+    if(EnableAdvancedErrorHandling && !InitializeAdvancedErrorHandling())
+    {
+        Print("ERROR: Failed to initialize advanced error handling");
+        return INIT_FAILED;
+    }
+
+    // Set trade parameters with retry logic
+    if(!InitializeTradeSettingsWithRetry())
+    {
+        Print("ERROR: Failed to initialize trade settings after retries");
+        return INIT_FAILED;
+    }
+
+    // Initialize indicators with advanced error handling
+    if(!InitializeIndicatorsAdvanced())
     {
         Print("ERROR: Failed to initialize indicators");
         return INIT_FAILED;
     }
-    
+
+    // Initialize V3 caching systems
+    if(EnableTickLevelOptimization && !InitializeTickCache())
+    {
+        Print("WARNING: Failed to initialize tick cache, continuing without it");
+    }
+
+    if(EnableMultiTimeframeCaching && !InitializeMTFCache())
+    {
+        Print("WARNING: Failed to initialize MTF cache, continuing without it");
+    }
+
     // Initialize session data
     InitializeSessionData();
-    
+
     // Reset daily statistics
     ResetDailyStats();
-    
+
     // Initialize performance tracking
     g_peak_balance = account.Balance();
-    
-    Print("Professional DAX Scalper initialized successfully");
+
+    Print("Professional DAX Scalper V3.0 initialized successfully");
     Print("Max spread: ", MaxSpreadPoints, " points");
     Print("Risk per trade: ", AccountRiskPercent, "%");
     Print("Max daily trades: ", MaxDailyTrades);
     Print("Session: ", EuropeanStart, ":00-", EuropeanEnd, ":00 CET");
-    
+    Print("Advanced error handling: ", EnableAdvancedErrorHandling ? "ENABLED" : "DISABLED");
+    Print("Tick-level optimization: ", EnableTickLevelOptimization ? "ENABLED" : "DISABLED");
+    Print("Multi-timeframe caching: ", EnableMultiTimeframeCaching ? "ENABLED" : "DISABLED");
+
     return INIT_SUCCEEDED;
 }
 
@@ -188,13 +293,31 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-    // Release indicator handles
-    if(g_atr_handle != INVALID_HANDLE) IndicatorRelease(g_atr_handle);
-    
-    // Print final statistics
+    // Release indicator handles safely
+    if(g_atr_handle != INVALID_HANDLE)
+    {
+        if(!IndicatorRelease(g_atr_handle))
+        {
+            Print("Warning: Failed to release ATR indicator handle");
+        }
+        g_atr_handle = INVALID_HANDLE;
+    }
+
+    // Print performance statistics
+    if(EnablePerformanceMonitoring)
+    {
+        Print("=== FINAL PERFORMANCE STATISTICS ===");
+        Print("Max tick processing time: ", g_max_tick_processing_time, " μs");
+        Print("Total slow ticks: ", g_slow_ticks_count);
+        Print("Total errors: ", g_error_count);
+        Print("Memory optimization: ", EnableMemoryOptimization ? "ENABLED" : "DISABLED");
+        Print("===================================");
+    }
+
+    // Print final trading statistics
     PrintFinalStatistics();
-    
-    Print("DAX Professional Scalper deinitialized. Reason: ", reason);
+
+    Print("DAX Professional Scalper V2.1 deinitialized. Reason: ", reason);
 }
 
 //+------------------------------------------------------------------+
@@ -202,30 +325,632 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-    // Check daily reset
-    CheckDailyReset();
-    
-    // Update session data
-    UpdateSessionData();
-    
-    // Check if we should trade
-    if(!ShouldTrade())
-        return;
-    
-    // Update market analysis
-    UpdateMarketAnalysis();
-    
-    // Manage existing positions
-    ManagePositions();
-    
-    // Look for new trading opportunities
-    if(!position.Select(_Symbol))
+    // Performance monitoring start
+    ulong start_time = 0;
+    if(EnablePerformanceMonitoring)
     {
-        AnalyzeAndTrade();
+        start_time = GetMicrosecondCount();
     }
 
-    // Debug signal quality periodically
+    // V3: Advanced connection check with recovery
+    if(EnableAdvancedErrorHandling && !CheckConnectionStatusAdvanced())
+    {
+        if(EnablePerformanceMonitoring && start_time > 0)
+        {
+            UpdatePerformanceMetrics(start_time);
+        }
+        return; // Skip tick if connection issues
+    }
+
+    // V3: Update tick cache for advanced analysis
+    if(EnableTickLevelOptimization)
+    {
+        UpdateTickCache();
+    }
+
+    // Original trading logic with V3 enhancements
+    CheckDailyReset();
+
+    UpdateSessionData();
+
+    if(!ShouldTrade())
+    {
+        if(EnablePerformanceMonitoring && start_time > 0)
+        {
+            UpdatePerformanceMetrics(start_time);
+        }
+        return;
+    }
+
+    // V3: Advanced market analysis with caching
+    if(EnableMultiTimeframeCaching)
+    {
+        UpdateMTFCacheIfNeeded();
+    }
+
+    if(EnableMemoryOptimization)
+    {
+        UpdateMarketAnalysisV3();
+    }
+    else
+    {
+        UpdateMarketAnalysis();
+    }
+
+    ManagePositions();
+
+    if(!position.Select(_Symbol))
+    {
+        AnalyzeAndTradeV3();
+    }
+
     DebugSignalQuality();
+
+    // Performance monitoring end
+    if(EnablePerformanceMonitoring && start_time > 0)
+    {
+        UpdatePerformanceMetrics(start_time);
+    }
+
+    // V3: Advanced cleanup and maintenance
+    if(EnableMemoryOptimization)
+    {
+        PerformPeriodicMemoryCleanup();
+    }
+
+    if(EnableAdvancedErrorHandling)
+    {
+        PerformErrorHandlingMaintenance();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| V3: Initialize advanced error handling                          |
+//+------------------------------------------------------------------+
+bool InitializeAdvancedErrorHandling()
+{
+    g_last_error_code = 0;
+    g_last_error_time = 0;
+    g_connection_lost = false;
+    g_connection_lost_time = 0;
+    g_retry_count = 0;
+    g_consecutive_errors = 0;
+
+    Print("Advanced error handling initialized");
+    Print("Max retry attempts: ", MaxRetryAttempts);
+    Print("Retry delay: ", RetryDelayMs, " ms");
+    Print("Connection timeout: ", ConnectionTimeoutSeconds, " seconds");
+
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Initialize trade settings with retry logic                  |
+//+------------------------------------------------------------------+
+bool InitializeTradeSettingsWithRetry()
+{
+    int attempts = 0;
+    while(attempts < MaxRetryAttempts)
+    {
+        ResetLastError();
+
+        trade.SetExpertMagicNumber(MagicNumber);
+        trade.SetMarginMode();
+        trade.SetTypeFillingBySymbol(_Symbol);
+        trade.SetDeviationInPoints(3);
+
+        int error = GetLastError();
+        if(error == 0)
+        {
+            Print("Trade settings initialized successfully on attempt ", attempts + 1);
+            return true;
+        }
+
+        attempts++;
+        if(attempts < MaxRetryAttempts)
+        {
+            Print("Trade settings initialization failed (", error, "), retrying in ", RetryDelayMs, " ms");
+            Sleep(RetryDelayMs);
+        }
+    }
+
+    LogErrorV3("Failed to initialize trade settings after all retries", GetLastError(), ERROR_SEVERITY_CRITICAL);
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Initialize indicators with advanced error handling          |
+//+------------------------------------------------------------------+
+bool InitializeIndicatorsAdvanced()
+{
+    int attempts = 0;
+    while(attempts < MaxRetryAttempts)
+    {
+        if(InitializeIndicators())
+        {
+            Print("Indicators initialized successfully on attempt ", attempts + 1);
+            return true;
+        }
+
+        attempts++;
+        if(attempts < MaxRetryAttempts)
+        {
+            Print("Indicator initialization failed, retrying in ", RetryDelayMs, " ms");
+            Sleep(RetryDelayMs);
+        }
+    }
+
+    LogErrorV3("Failed to initialize indicators after all retries", GetLastError(), ERROR_SEVERITY_CRITICAL);
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Initialize tick cache system                                |
+//+------------------------------------------------------------------+
+bool InitializeTickCache()
+{
+    ArrayResize(g_tick_cache_prices, TickCacheSize, ArrayReserveSize);
+    ArrayResize(g_tick_cache_volumes, TickCacheSize, ArrayReserveSize);
+    ArrayResize(g_tick_cache_times, TickCacheSize, ArrayReserveSize);
+
+    ArrayInitialize(g_tick_cache_prices, 0.0);
+    ArrayInitialize(g_tick_cache_volumes, 0);
+    ArrayInitialize(g_tick_cache_times, 0);
+
+    g_tick_cache_index = 0;
+    g_tick_cache_initialized = true;
+    g_cached_tick_velocity = 0.0;
+    g_last_tick_analysis_update = 0;
+
+    Print("Tick cache initialized with size: ", TickCacheSize);
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Initialize multi-timeframe cache                            |
+//+------------------------------------------------------------------+
+bool InitializeMTFCache()
+{
+    g_mtf_ema_m5 = 0.0;
+    g_mtf_ema_m15 = 0.0;
+    g_last_mtf_update = 0;
+    g_mtf_cache_valid = false;
+
+    Print("Multi-timeframe cache initialized");
+    Print("Cache refresh interval: ", MTFCacheMinutes, " minutes");
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Advanced connection status check with recovery              |
+//+------------------------------------------------------------------+
+bool CheckConnectionStatusAdvanced()
+{
+    // In backtest mode, always return true
+    if(MQLInfoInteger(MQL_TESTER))
+    {
+        return true;
+    }
+
+    // Check terminal connection
+    if(!TerminalInfoInteger(TERMINAL_CONNECTED))
+    {
+        if(!g_connection_lost)
+        {
+            g_connection_lost = true;
+            g_connection_lost_time = TimeCurrent();
+            LogErrorV3("Connection lost - attempting recovery", 0, ERROR_SEVERITY_HIGH);
+        }
+
+        // Check timeout
+        if(TimeCurrent() - g_connection_lost_time > ConnectionTimeoutSeconds)
+        {
+            LogErrorV3("Connection timeout exceeded", 0, ERROR_SEVERITY_CRITICAL);
+            return false;
+        }
+
+        return false;
+    }
+
+    // Connection restored
+    if(g_connection_lost)
+    {
+        g_connection_lost = false;
+        Print("Connection restored after ", TimeCurrent() - g_connection_lost_time, " seconds");
+        g_consecutive_errors = 0; // Reset error counter
+    }
+
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| Update performance metrics                                       |
+//+------------------------------------------------------------------+
+void UpdatePerformanceMetrics(ulong start_time)
+{
+    ulong processing_time = GetMicrosecondCount() - start_time;
+    g_tick_processing_time = processing_time;
+
+    if(processing_time > g_max_tick_processing_time)
+    {
+        g_max_tick_processing_time = processing_time;
+    }
+
+    // Count slow ticks (over 1000 microseconds)
+    if(processing_time > 1000)
+    {
+        g_slow_ticks_count++;
+    }
+
+    // Report performance every 10 minutes
+    if(TimeCurrent() - g_last_performance_report > 600)
+    {
+        Print("=== PERFORMANCE REPORT ===");
+        Print("Current tick time: ", g_tick_processing_time, " μs");
+        Print("Max tick time: ", g_max_tick_processing_time, " μs");
+        Print("Slow ticks: ", g_slow_ticks_count);
+        Print("Error count: ", g_error_count);
+        Print("========================");
+        g_last_performance_report = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Memory optimized market analysis                                |
+//+------------------------------------------------------------------+
+void UpdateMarketAnalysisOptimized()
+{
+    // Use dynamic arrays with caching to avoid repeated allocations
+    static double atr_buffer[];
+    static bool arrays_initialized = false;
+
+    if(!arrays_initialized)
+    {
+        ArraySetAsSeries(atr_buffer, true);
+        ArrayResize(atr_buffer, 1, ArrayReserveSize);
+        arrays_initialized = true;
+    }
+
+    // Update volatility with error handling
+    if(g_atr_handle != INVALID_HANDLE)
+    {
+        if(CopyBuffer(g_atr_handle, 0, 0, 1, atr_buffer) >= 1)
+        {
+            g_current_volatility = atr_buffer[0];
+        }
+        else
+        {
+            g_error_count++;
+            // Use fallback volatility
+            if(g_current_volatility <= 0) g_current_volatility = 50.0;
+        }
+    }
+
+    // Continue with other analysis
+    UpdateVolumeAnalysisOptimized();
+    if(UseVolumeProfile) UpdateVolumeProfile();
+    UpdateMarketStructure();
+}
+
+//+------------------------------------------------------------------+
+//| Memory optimized volume analysis                                |
+//+------------------------------------------------------------------+
+void UpdateVolumeAnalysisOptimized()
+{
+    // Use static arrays with reserved capacity
+    static long volume_data[];
+    static bool volume_arrays_initialized = false;
+
+    if(!volume_arrays_initialized)
+    {
+        ArraySetAsSeries(volume_data, true);
+        ArrayResize(volume_data, VolumeAnalysisPeriod + 1, ArrayReserveSize);
+        volume_arrays_initialized = true;
+    }
+
+    // Get volume data
+    int copied = CopyTickVolume(_Symbol, PERIOD_M1, 0, VolumeAnalysisPeriod + 1, volume_data);
+
+    if(copied >= VolumeAnalysisPeriod + 1)
+    {
+        // Calculate average volume efficiently
+        double volume_sum = 0.0;
+        for(int i = 1; i <= VolumeAnalysisPeriod; i++)
+        {
+            volume_sum += (double)volume_data[i];
+        }
+        g_average_volume = volume_sum / VolumeAnalysisPeriod;
+
+        // Current volume ratio
+        double current_volume = (double)volume_data[0];
+        g_current_volume_ratio = (g_average_volume > 0) ? current_volume / g_average_volume : 1.0;
+    }
+    else
+    {
+        g_error_count++;
+        // Use fallback values
+        if(g_average_volume <= 0) g_average_volume = 1000.0;
+        if(g_current_volume_ratio <= 0) g_current_volume_ratio = 1.0;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Perform periodic memory cleanup                                 |
+//+------------------------------------------------------------------+
+void PerformPeriodicMemoryCleanup()
+{
+    // Perform cleanup every 5 minutes
+    if(TimeCurrent() - g_last_memory_cleanup > 300)
+    {
+        // Force garbage collection
+        double dummy[];
+        ArrayResize(dummy, 1);
+        ArrayFree(dummy);
+
+        g_last_memory_cleanup = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| V3: Update tick cache for advanced analysis                     |
+//+------------------------------------------------------------------+
+void UpdateTickCache()
+{
+    if(!g_tick_cache_initialized) return;
+
+    // Get current tick data
+    MqlTick tick;
+    if(!SymbolInfoTick(_Symbol, tick)) return;
+
+    // Store in circular buffer
+    g_tick_cache_prices[g_tick_cache_index] = (tick.ask + tick.bid) / 2.0;
+    g_tick_cache_volumes[g_tick_cache_index] = tick.volume;
+    g_tick_cache_times[g_tick_cache_index] = tick.time;
+
+    // Update index (circular buffer)
+    g_tick_cache_index = (g_tick_cache_index + 1) % TickCacheSize;
+
+    // Update cached tick velocity every 10 ticks
+    static int tick_counter = 0;
+    tick_counter++;
+
+    if(tick_counter >= 10)
+    {
+        UpdateCachedTickVelocity();
+        tick_counter = 0;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| V3: Update cached tick velocity from cache                      |
+//+------------------------------------------------------------------+
+void UpdateCachedTickVelocity()
+{
+    if(!g_tick_cache_initialized) return;
+
+    int valid_ticks = 0;
+    double price_change = 0.0;
+    datetime time_span = 0;
+
+    // Calculate velocity from cached data
+    for(int i = 1; i < TickCacheSize; i++)
+    {
+        int current_idx = (g_tick_cache_index - i) % TickCacheSize;
+        int prev_idx = (g_tick_cache_index - i - 1) % TickCacheSize;
+
+        if(current_idx < 0) current_idx += TickCacheSize;
+        if(prev_idx < 0) prev_idx += TickCacheSize;
+
+        if(g_tick_cache_times[current_idx] > 0 && g_tick_cache_times[prev_idx] > 0)
+        {
+            price_change += MathAbs(g_tick_cache_prices[current_idx] - g_tick_cache_prices[prev_idx]);
+            time_span = g_tick_cache_times[current_idx] - g_tick_cache_times[prev_idx];
+            valid_ticks++;
+        }
+
+        if(valid_ticks >= 20) break; // Use last 20 ticks
+    }
+
+    // Calculate velocity (points per second)
+    if(valid_ticks > 0 && time_span > 0)
+    {
+        g_cached_tick_velocity = (price_change / _Point) / time_span;
+        g_last_tick_analysis_update = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| V3: Update multi-timeframe cache if needed                      |
+//+------------------------------------------------------------------+
+void UpdateMTFCacheIfNeeded()
+{
+    // Update cache every MTFCacheMinutes
+    if(TimeCurrent() - g_last_mtf_update < MTFCacheMinutes * 60)
+    {
+        return; // Cache still valid
+    }
+
+    // Update M5 EMA
+    double m5_close[];
+    ArraySetAsSeries(m5_close, true);
+
+    if(CopyClose(_Symbol, PERIOD_M5, 0, 20, m5_close) >= 20)
+    {
+        // Calculate simple EMA approximation
+        double sum = 0.0;
+        for(int i = 0; i < 20; i++)
+        {
+            sum += m5_close[i];
+        }
+        g_mtf_ema_m5 = sum / 20.0;
+    }
+
+    // Update M15 EMA
+    double m15_close[];
+    ArraySetAsSeries(m15_close, true);
+
+    if(CopyClose(_Symbol, PERIOD_M15, 0, 20, m15_close) >= 20)
+    {
+        // Calculate simple EMA approximation
+        double sum = 0.0;
+        for(int i = 0; i < 20; i++)
+        {
+            sum += m15_close[i];
+        }
+        g_mtf_ema_m15 = sum / 20.0;
+    }
+
+    g_last_mtf_update = TimeCurrent();
+    g_mtf_cache_valid = true;
+}
+
+//+------------------------------------------------------------------+
+//| V3: Advanced market analysis with caching                       |
+//+------------------------------------------------------------------+
+void UpdateMarketAnalysisV3()
+{
+    // Use cached tick velocity if available
+    if(EnableTickLevelOptimization && g_cached_tick_velocity > 0)
+    {
+        g_tick_velocity = g_cached_tick_velocity;
+    }
+
+    // Use MTF cache for trend bias
+    if(EnableMultiTimeframeCaching && g_mtf_cache_valid)
+    {
+        double current_price = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) + SymbolInfoDouble(_Symbol, SYMBOL_BID)) / 2.0;
+
+        // Simple trend bias from MTF EMAs
+        if(current_price > g_mtf_ema_m5 && g_mtf_ema_m5 > g_mtf_ema_m15)
+        {
+            g_tick_directional_bias = 1.0; // Bullish bias
+        }
+        else if(current_price < g_mtf_ema_m5 && g_mtf_ema_m5 < g_mtf_ema_m15)
+        {
+            g_tick_directional_bias = -1.0; // Bearish bias
+        }
+        else
+        {
+            g_tick_directional_bias = 0.0; // Neutral
+        }
+    }
+
+    // Continue with optimized analysis
+    UpdateMarketAnalysisOptimized();
+}
+
+//+------------------------------------------------------------------+
+//| V3: Enhanced analyze and trade with caching                     |
+//+------------------------------------------------------------------+
+void AnalyzeAndTradeV3()
+{
+    // Check minimum time between trades
+    if(g_last_trade_time > 0 && (TimeCurrent() - g_last_trade_time) < 180) // 3 minutes
+        return;
+
+    // Use cached tick analysis if available
+    bool use_cached_analysis = (EnableTickLevelOptimization &&
+                                g_cached_tick_velocity > 0 &&
+                                TimeCurrent() - g_last_tick_analysis_update < 60);
+
+    if(use_cached_analysis)
+    {
+        // Use cached tick velocity for faster analysis
+        if(g_cached_tick_velocity < MinTickVelocity)
+        {
+            return; // Not enough velocity
+        }
+    }
+
+    // Use MTF bias for signal filtering
+    if(EnableMultiTimeframeCaching && g_mtf_cache_valid)
+    {
+        // Apply MTF bias to signal generation
+        // This will be integrated with existing signal logic
+    }
+
+    // Continue with original analysis
+    AnalyzeAndTrade();
+}
+
+//+------------------------------------------------------------------+
+//| V3: Advanced error logging with severity                        |
+//+------------------------------------------------------------------+
+void LogErrorV3(string description, int error_code, ENUM_ERROR_SEVERITY severity)
+{
+    g_last_error_code = error_code;
+    g_last_error_time = TimeCurrent();
+    g_consecutive_errors++;
+
+    string severity_text = "";
+    switch(severity)
+    {
+        case ERROR_SEVERITY_LOW: severity_text = "LOW"; break;
+        case ERROR_SEVERITY_MEDIUM: severity_text = "MEDIUM"; break;
+        case ERROR_SEVERITY_HIGH: severity_text = "HIGH"; break;
+        case ERROR_SEVERITY_CRITICAL: severity_text = "CRITICAL"; break;
+    }
+
+    Print("V3 ERROR [", severity_text, "]: ", description, " (Code: ", error_code, ")");
+
+    // Handle critical errors
+    if(severity == ERROR_SEVERITY_CRITICAL)
+    {
+        Print("CRITICAL ERROR - Consider manual intervention");
+
+        // Reset consecutive errors after critical error handling
+        if(g_consecutive_errors > 10)
+        {
+            Print("Too many consecutive errors (", g_consecutive_errors, ") - implementing cooldown");
+            Sleep(5000); // 5 second cooldown
+            g_consecutive_errors = 0;
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| V3: Perform error handling maintenance                          |
+//+------------------------------------------------------------------+
+void PerformErrorHandlingMaintenance()
+{
+    static datetime last_maintenance = 0;
+
+    // Perform maintenance every 5 minutes
+    if(TimeCurrent() - last_maintenance < 300) return;
+
+    // Reset error counters if no recent errors
+    if(TimeCurrent() - g_last_error_time > 1800) // 30 minutes
+    {
+        if(g_consecutive_errors > 0)
+        {
+            Print("Resetting error counters after 30 minutes of stable operation");
+            g_consecutive_errors = 0;
+            g_error_count = MathMax(0, g_error_count - 1); // Slowly reduce error count
+        }
+    }
+
+    // Validate cache integrity
+    if(EnableTickLevelOptimization && g_tick_cache_initialized)
+    {
+        // Check if tick cache is still valid
+        if(TimeCurrent() - g_last_tick_analysis_update > 300) // 5 minutes
+        {
+            Print("Tick cache appears stale, reinitializing...");
+            InitializeTickCache();
+        }
+    }
+
+    // Validate MTF cache
+    if(EnableMultiTimeframeCaching && g_mtf_cache_valid)
+    {
+        if(TimeCurrent() - g_last_mtf_update > MTFCacheMinutes * 60 * 2) // Double the cache time
+        {
+            Print("MTF cache appears stale, marking as invalid");
+            g_mtf_cache_valid = false;
+        }
+    }
+
+    last_maintenance = TimeCurrent();
 }
 
 //+------------------------------------------------------------------+

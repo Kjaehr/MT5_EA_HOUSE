@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "DAX Professional Scalper"
 #property link      ""
-#property version   "2.00"
+#property version   "2.01"
 #property strict
 
 //--- Include files
@@ -19,7 +19,7 @@ input double   LotSize = 0.1;                    // Base position size
 input int      StopLoss = 700;                     // Stop loss in points
 input int      TakeProfit = 2000;                   // Take profit in points (1:1.67 R/R)
 input double   MaxSpreadPoints = 50;             // Max spread (adjusted for backtest data)
-input int      MagicNumber = 789456;              // Magic number
+input int      MagicNumber = 789457;              // Magic number (V2)
 
 input group "=== QUALITY FILTERS ==="
 input double   MinVolumeMultiplier = 0.2;        // Minimum volume vs average (backtest adjusted)
@@ -27,14 +27,19 @@ input int      VolumeAnalysisPeriod = 20;         // Period for volume analysis
 input double   VolatilityThreshold = 0.8;         // Min volatility for entry (realistic)
 input int      ConsecutiveLossLimit = 5;          // Max consecutive losses before pause (increased)
 input int      CooldownMinutes = 30;              // Cooldown after loss limit (increased)
-input bool     OnlyExcellentSignals = false;      // Trade GOOD+ quality signals (more realistic)
-input bool     RequireConfluence = false;         // Require multiple confirmations (disabled for testing)
+input bool     OnlyExcellentSignals = true;      // Trade GOOD+ quality signals (more realistic)
+input bool     RequireConfluence = true;         // Require multiple confirmations (disabled for testing)
 input bool     UsePullbackEntries = false;        // Wait for pullbacks before entry (disabled for testing)
-input bool     UseMomentumCheck = false;          // Require momentum alignment with signal
+input bool     UseMomentumCheck = true;          // Require momentum alignment with signal
 input int      MomentumBars = 3;                  // Number of bars for momentum check
-input bool     UseTickVelocity = false;          // Use tick velocity analysis
-input int      TickVelocityWindow = 10;           // Number of ticks for velocity analysis
-input double   MinTickVelocity = 25;            // Minimum tick velocity threshold
+input bool     UseTickVelocity = true;           // Use advanced tick velocity analysis
+input int      TickVelocityWindow = 20;          // Number of ticks for velocity analysis (increased)
+input double   MinTickVelocity = 15;             // Minimum tick velocity threshold (adjusted for DAX)
+input bool     UseTickMicrostructure = true;     // Use tick microstructure analysis
+input int      TickPatternWindow = 15;           // Window for tick pattern analysis
+input double   TickAccelerationThreshold = 2.0;  // Tick acceleration threshold
+input bool     UseBidAskAnalysis = true;         // Use bid/ask spread and pressure analysis
+input double   MaxSpreadVolatility = 3.0;        // Max spread volatility multiplier
 
 input group "=== MARKET STRUCTURE ==="
 input bool     UseVolumeProfile = true;           // Use volume profile analysis
@@ -55,6 +60,12 @@ input double   AccountRiskPercent = 0.5;          // Risk per trade as % of acco
 input double   MaxDrawdownPercent = 5.0;          // Max drawdown before stop
 input bool     UseAdaptivePositioning = true;     // Adapt position size to conditions
 input bool     EnableEmergencyStop = true;        // Emergency stop on major losses
+
+input group "=== PERFORMANCE OPTIMIZATIONS ==="
+input bool     EnablePerformanceMonitoring = true; // Monitor tick processing performance
+input bool     EnableMemoryOptimization = true;   // Optimize memory usage and array operations
+input int      ArrayReserveSize = 100;            // Reserve size for dynamic arrays
+input bool     EnableErrorHandling = true;        // Enhanced error handling and recovery
 
 //--- Global variables
 CTrade         trade;
@@ -86,6 +97,24 @@ double         g_total_profit = 0.0;
 double         g_max_drawdown = 0.0;
 double         g_peak_balance = 0.0;
 
+// Advanced tick analysis variables
+double         g_tick_velocity = 0.0;
+double         g_tick_acceleration = 0.0;
+double         g_tick_momentum_score = 0.0;
+double         g_spread_pressure = 0.0;
+double         g_tick_directional_bias = 0.0;
+int            g_consecutive_tick_direction = 0;
+double         g_tick_volume_weighted_price = 0.0;
+datetime       g_last_tick_analysis = 0;
+
+// Performance optimization variables
+ulong          g_tick_processing_time = 0;
+ulong          g_max_tick_processing_time = 0;
+int            g_slow_ticks_count = 0;
+datetime       g_last_performance_report = 0;
+datetime       g_last_memory_cleanup = 0;
+int            g_error_count = 0;
+
 // Indicators
 int            g_atr_handle = INVALID_HANDLE;
 int            g_volume_sma_handle = INVALID_HANDLE;
@@ -105,6 +134,29 @@ enum ENUM_SIGNAL_QUALITY
     SIGNAL_FAIR = 1,
     SIGNAL_GOOD = 2,
     SIGNAL_EXCELLENT = 3
+};
+
+//--- Tick analysis structures
+struct TickAnalysisData
+{
+    double velocity;              // Points per second
+    double acceleration;          // Change in velocity
+    double momentum_score;        // Directional momentum (0-100)
+    double spread_pressure;       // Bid/ask pressure (-1 to 1)
+    double directional_bias;      // Overall directional bias (-1 to 1)
+    int    consecutive_direction; // Consecutive ticks in same direction
+    double volume_weighted_price; // VWAP from tick data
+    double tick_efficiency;       // Price movement efficiency
+    bool   is_valid;             // Data validity flag
+};
+
+enum ENUM_TICK_PATTERN
+{
+    TICK_PATTERN_NONE = 0,
+    TICK_PATTERN_ACCELERATION = 1,
+    TICK_PATTERN_DECELERATION = 2,
+    TICK_PATTERN_REVERSAL = 3,
+    TICK_PATTERN_CONSOLIDATION = 4
 };
 
 //+------------------------------------------------------------------+
@@ -150,13 +202,31 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-    // Release indicator handles
-    if(g_atr_handle != INVALID_HANDLE) IndicatorRelease(g_atr_handle);
-    
-    // Print final statistics
+    // Release indicator handles safely
+    if(g_atr_handle != INVALID_HANDLE)
+    {
+        if(!IndicatorRelease(g_atr_handle))
+        {
+            Print("Warning: Failed to release ATR indicator handle");
+        }
+        g_atr_handle = INVALID_HANDLE;
+    }
+
+    // Print performance statistics
+    if(EnablePerformanceMonitoring)
+    {
+        Print("=== FINAL PERFORMANCE STATISTICS ===");
+        Print("Max tick processing time: ", g_max_tick_processing_time, " μs");
+        Print("Total slow ticks: ", g_slow_ticks_count);
+        Print("Total errors: ", g_error_count);
+        Print("Memory optimization: ", EnableMemoryOptimization ? "ENABLED" : "DISABLED");
+        Print("===================================");
+    }
+
+    // Print final trading statistics
     PrintFinalStatistics();
-    
-    Print("DAX Professional Scalper deinitialized. Reason: ", reason);
+
+    Print("DAX Professional Scalper V2.1 deinitialized. Reason: ", reason);
 }
 
 //+------------------------------------------------------------------+
@@ -164,30 +234,186 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-    // Check daily reset
+    // Performance monitoring start
+    ulong start_time = 0;
+    if(EnablePerformanceMonitoring)
+    {
+        start_time = GetMicrosecondCount();
+    }
+
+    // Original trading logic
     CheckDailyReset();
-    
-    // Update session data
+
     UpdateSessionData();
-    
-    // Check if we should trade
+
     if(!ShouldTrade())
+    {
+        // Update performance metrics even when not trading
+        if(EnablePerformanceMonitoring && start_time > 0)
+        {
+            UpdatePerformanceMetrics(start_time);
+        }
         return;
-    
-    // Update market analysis
-    UpdateMarketAnalysis();
-    
-    // Manage existing positions
+    }
+
+    // Update market analysis with optional optimization
+    if(EnableMemoryOptimization)
+    {
+        UpdateMarketAnalysisOptimized();
+    }
+    else
+    {
+        UpdateMarketAnalysis();
+    }
+
     ManagePositions();
-    
-    // Look for new trading opportunities
+
     if(!position.Select(_Symbol))
     {
         AnalyzeAndTrade();
     }
 
-    // Debug signal quality periodically
     DebugSignalQuality();
+
+    // Performance monitoring end
+    if(EnablePerformanceMonitoring && start_time > 0)
+    {
+        UpdatePerformanceMetrics(start_time);
+    }
+
+    // Periodic memory cleanup
+    if(EnableMemoryOptimization)
+    {
+        PerformPeriodicMemoryCleanup();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Update performance metrics                                       |
+//+------------------------------------------------------------------+
+void UpdatePerformanceMetrics(ulong start_time)
+{
+    ulong processing_time = GetMicrosecondCount() - start_time;
+    g_tick_processing_time = processing_time;
+
+    if(processing_time > g_max_tick_processing_time)
+    {
+        g_max_tick_processing_time = processing_time;
+    }
+
+    // Count slow ticks (over 1000 microseconds)
+    if(processing_time > 1000)
+    {
+        g_slow_ticks_count++;
+    }
+
+    // Report performance every 10 minutes
+    if(TimeCurrent() - g_last_performance_report > 600)
+    {
+        Print("=== PERFORMANCE REPORT ===");
+        Print("Current tick time: ", g_tick_processing_time, " μs");
+        Print("Max tick time: ", g_max_tick_processing_time, " μs");
+        Print("Slow ticks: ", g_slow_ticks_count);
+        Print("Error count: ", g_error_count);
+        Print("========================");
+        g_last_performance_report = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Memory optimized market analysis                                |
+//+------------------------------------------------------------------+
+void UpdateMarketAnalysisOptimized()
+{
+    // Use dynamic arrays with caching to avoid repeated allocations
+    static double atr_buffer[];
+    static bool arrays_initialized = false;
+
+    if(!arrays_initialized)
+    {
+        ArraySetAsSeries(atr_buffer, true);
+        ArrayResize(atr_buffer, 1, ArrayReserveSize);
+        arrays_initialized = true;
+    }
+
+    // Update volatility with error handling
+    if(g_atr_handle != INVALID_HANDLE)
+    {
+        if(CopyBuffer(g_atr_handle, 0, 0, 1, atr_buffer) >= 1)
+        {
+            g_current_volatility = atr_buffer[0];
+        }
+        else
+        {
+            g_error_count++;
+            // Use fallback volatility
+            if(g_current_volatility <= 0) g_current_volatility = 50.0;
+        }
+    }
+
+    // Continue with other analysis
+    UpdateVolumeAnalysisOptimized();
+    if(UseVolumeProfile) UpdateVolumeProfile();
+    UpdateMarketStructure();
+}
+
+//+------------------------------------------------------------------+
+//| Memory optimized volume analysis                                |
+//+------------------------------------------------------------------+
+void UpdateVolumeAnalysisOptimized()
+{
+    // Use static arrays with reserved capacity
+    static long volume_data[];
+    static bool volume_arrays_initialized = false;
+
+    if(!volume_arrays_initialized)
+    {
+        ArraySetAsSeries(volume_data, true);
+        ArrayResize(volume_data, VolumeAnalysisPeriod + 1, ArrayReserveSize);
+        volume_arrays_initialized = true;
+    }
+
+    // Get volume data
+    int copied = CopyTickVolume(_Symbol, PERIOD_M1, 0, VolumeAnalysisPeriod + 1, volume_data);
+
+    if(copied >= VolumeAnalysisPeriod + 1)
+    {
+        // Calculate average volume efficiently
+        double volume_sum = 0.0;
+        for(int i = 1; i <= VolumeAnalysisPeriod; i++)
+        {
+            volume_sum += (double)volume_data[i];
+        }
+        g_average_volume = volume_sum / VolumeAnalysisPeriod;
+
+        // Current volume ratio
+        double current_volume = (double)volume_data[0];
+        g_current_volume_ratio = (g_average_volume > 0) ? current_volume / g_average_volume : 1.0;
+    }
+    else
+    {
+        g_error_count++;
+        // Use fallback values
+        if(g_average_volume <= 0) g_average_volume = 1000.0;
+        if(g_current_volume_ratio <= 0) g_current_volume_ratio = 1.0;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Perform periodic memory cleanup                                 |
+//+------------------------------------------------------------------+
+void PerformPeriodicMemoryCleanup()
+{
+    // Perform cleanup every 5 minutes
+    if(TimeCurrent() - g_last_memory_cleanup > 300)
+    {
+        // Force garbage collection
+        double dummy[];
+        ArrayResize(dummy, 1);
+        ArrayFree(dummy);
+
+        g_last_memory_cleanup = TimeCurrent();
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -811,21 +1037,34 @@ int GetProfessionalSignal(ENUM_MARKET_CONDITION market_condition)
     if(RequireConfluence && confluence_count < 1) // Reduced from 2 to 1
         return 0; // Not enough confluence
 
-    // Enhanced mean reversion signals (39% mean reversion from tick analysis)
+    // Enhanced mean reversion signals with advanced tick analysis
     if(market_condition == MARKET_RANGING)
     {
         double range_size = g_resistance_level - g_support_level;
         static datetime last_range_debug = 0;
+
+        // Check if tick conditions favor mean reversion
+        bool tick_favors_mean_reversion = IsTickConditionFavoringMeanReversion();
 
         // Debug range analysis every 5 minutes
         if(TimeCurrent() - last_range_debug > 300)
         {
             Print("RANGE DEBUG: Size=", range_size, " | Volatility*1.5=", g_current_volatility * 1.5, " | Current Price=", current_price);
             Print("RANGE DEBUG: Support=", g_support_level, " | Resistance=", g_resistance_level);
+            Print("RANGE DEBUG: Tick favors mean reversion=", tick_favors_mean_reversion);
             last_range_debug = TimeCurrent();
         }
 
-        if(range_size > g_current_volatility * 1.5) // Reduced threshold for backtest data
+        // Only proceed if tick conditions are favorable for mean reversion
+        if(!tick_favors_mean_reversion)
+        {
+            if(TimeCurrent() - last_range_debug > 300)
+            {
+                Print("RANGE REJECTED: Tick conditions do not favor mean reversion");
+            }
+            // Don't return 0 immediately, let breakout logic handle it
+        }
+        else if(range_size > g_current_volatility * 1.5) // Reduced threshold for backtest data
         {
             double range_position = (current_price - g_support_level) / range_size;
 
@@ -892,15 +1131,32 @@ int GetProfessionalSignal(ENUM_MARKET_CONDITION market_condition)
         }
     }
 
-    // Enhanced breakout signals with strict requirements
+    // Enhanced breakout signals with advanced tick analysis
     if(market_condition == MARKET_TRENDING_UP || market_condition == MARKET_TRENDING_DOWN)
     {
+        // Check if tick conditions favor breakouts
+        bool tick_favors_breakout = IsTickConditionFavoringBreakout();
+
         // Require good volume for breakouts
         if(g_current_volume_ratio >= MinVolumeMultiplier * 1.2) // Reduced from 1.8
         {
             // Additional momentum confirmation required
             double momentum_quality = AnalyzeMomentumQuality();
-            if(momentum_quality > 0.6)
+
+            // Enhanced breakout validation with tick analysis
+            bool breakout_conditions_met = (momentum_quality > 0.6) && tick_favors_breakout;
+
+            if(!tick_favors_breakout)
+            {
+                static datetime last_breakout_debug = 0;
+                if(TimeCurrent() - last_breakout_debug > 300)
+                {
+                    Print("BREAKOUT DEBUG: Tick conditions do not favor breakout strategy");
+                    last_breakout_debug = TimeCurrent();
+                }
+            }
+
+            if(breakout_conditions_met)
             {
                 if(market_condition == MARKET_TRENDING_UP &&
                    current_price > g_resistance_level + (g_current_volatility * 0.5))
@@ -1036,102 +1292,643 @@ bool CheckMomentumAlignment(int signal_direction)
 }
 
 //+------------------------------------------------------------------+
-//| Analyze tick velocity for momentum confirmation                 |
+//| Advanced Tick Analysis - Comprehensive tick-level analysis     |
 //+------------------------------------------------------------------+
-double AnalyzeTickVelocity()
+TickAnalysisData AnalyzeAdvancedTickData()
 {
-    if(!UseTickVelocity)
-        return 1.0; // Return neutral if disabled
+    TickAnalysisData result = {0};
+    result.is_valid = false;
+
+    if(!UseTickVelocity && !UseTickMicrostructure)
+    {
+        result.velocity = 1.0;
+        result.is_valid = true;
+        return result;
+    }
 
     MqlTick ticks[];
     ArraySetAsSeries(ticks, true);
 
-    // Request recent ticks based on MQL5 guide best practices
-    int copied = CopyTicks(_Symbol, ticks, COPY_TICKS_ALL, 0, TickVelocityWindow);
-    if(copied < TickVelocityWindow)
+    // Request more ticks for better analysis
+    int window_size = MathMax(TickVelocityWindow, TickPatternWindow);
+    int copied = CopyTicks(_Symbol, ticks, COPY_TICKS_ALL, 0, window_size);
+
+    if(copied < window_size)
     {
-        Print("WARNING: Not enough ticks for velocity analysis. Copied: ", copied, " Needed: ", TickVelocityWindow);
+        static datetime last_warning = 0;
+        if(TimeCurrent() - last_warning > 60) // Warn every minute
+        {
+            Print("WARNING: Not enough ticks for advanced analysis. Copied: ", copied, " Needed: ", window_size);
+            last_warning = TimeCurrent();
+        }
         ResetLastError();
-        return 1.0; // Return neutral if not enough data
+        result.velocity = 1.0;
+        result.is_valid = true;
+        return result;
     }
 
-    // Calculate price changes between consecutive ticks
+    // Calculate basic velocity metrics
+    CalculateTickVelocityMetrics(ticks, copied, result);
+
+    // Calculate tick microstructure if enabled
+    if(UseTickMicrostructure)
+    {
+        CalculateTickMicrostructure(ticks, copied, result);
+    }
+
+    // Calculate bid/ask analysis if enabled
+    if(UseBidAskAnalysis)
+    {
+        CalculateBidAskPressure(ticks, copied, result);
+    }
+
+    // Calculate tick patterns and momentum
+    CalculateTickPatterns(ticks, copied, result);
+
+    result.is_valid = true;
+
+    // Update global variables for debugging
+    g_tick_velocity = result.velocity;
+    g_tick_acceleration = result.acceleration;
+    g_tick_momentum_score = result.momentum_score;
+    g_spread_pressure = result.spread_pressure;
+    g_tick_directional_bias = result.directional_bias;
+    g_consecutive_tick_direction = result.consecutive_direction;
+    g_tick_volume_weighted_price = result.volume_weighted_price;
+    g_last_tick_analysis = TimeCurrent();
+
+    // Debug output every 5 minutes
+    static datetime last_debug = 0;
+    if(TimeCurrent() - last_debug > 300)
+    {
+        Print("=== ADVANCED TICK ANALYSIS ===");
+        Print("Velocity: ", DoubleToString(result.velocity, 2), " points/sec");
+        Print("Acceleration: ", DoubleToString(result.acceleration, 2));
+        Print("Momentum Score: ", DoubleToString(result.momentum_score, 1));
+        Print("Spread Pressure: ", DoubleToString(result.spread_pressure, 3));
+        Print("Directional Bias: ", DoubleToString(result.directional_bias, 3));
+        Print("Consecutive Direction: ", result.consecutive_direction);
+        Print("Tick Efficiency: ", DoubleToString(result.tick_efficiency, 3));
+        Print("==============================");
+        last_debug = TimeCurrent();
+    }
+
+    return result;
+}
+
+//+------------------------------------------------------------------+
+//| Calculate basic tick velocity metrics                          |
+//+------------------------------------------------------------------+
+void CalculateTickVelocityMetrics(const MqlTick &ticks[], int tick_count, TickAnalysisData &result)
+{
     double total_price_change = 0.0;
     double total_time_diff = 0.0;
+    double directional_change = 0.0;
     int valid_intervals = 0;
 
-    for(int i = 0; i < copied - 1; i++)
+    double velocities[]; // Store individual velocities for acceleration calc
+    ArrayResize(velocities, tick_count - 1);
+
+    for(int i = 0; i < tick_count - 1; i++)
     {
         // Calculate mid-price change
-        double mid_price_current = (ticks[i].bid + ticks[i].ask) / 2.0;
-        double mid_price_previous = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
-        double price_change = MathAbs(mid_price_current - mid_price_previous);
+        double mid_current = (ticks[i].bid + ticks[i].ask) / 2.0;
+        double mid_previous = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
+        double price_change = mid_current - mid_previous;
+        double abs_price_change = MathAbs(price_change);
 
         // Calculate time difference in milliseconds
         double time_diff = (double)(ticks[i].time_msc - ticks[i+1].time_msc);
 
-        if(time_diff > 0) // Avoid division by zero
+        if(time_diff > 0 && abs_price_change > 0)
         {
-            total_price_change += price_change;
+            total_price_change += abs_price_change;
+            directional_change += price_change; // Keep sign for directional bias
             total_time_diff += time_diff;
+
+            // Store individual velocity for acceleration calculation
+            velocities[valid_intervals] = abs_price_change / time_diff * 1000.0;
             valid_intervals++;
         }
     }
 
     if(valid_intervals == 0 || total_time_diff == 0)
     {
-        Print("WARNING: No valid tick intervals for velocity calculation");
-        return 1.0; // Return neutral
+        result.velocity = 0.0;
+        result.acceleration = 0.0;
+        result.directional_bias = 0.0;
+        return;
     }
 
-    // Calculate velocity as price change per millisecond
-    double velocity = total_price_change / total_time_diff;
-
-    // Normalize velocity (multiply by 1000 to get change per second)
-    velocity *= 1000.0;
-
-    // Convert to points for DAX
+    // Calculate average velocity (points per second)
+    result.velocity = (total_price_change / total_time_diff) * 1000.0;
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    if(point > 0)
-        velocity /= point;
+    if(point > 0) result.velocity /= point;
 
-    static datetime last_velocity_debug = 0;
-    if(TimeCurrent() - last_velocity_debug > 300) // Debug every 5 minutes
+    // Calculate directional bias (-1 to 1)
+    result.directional_bias = directional_change / total_price_change;
+    if(total_price_change == 0) result.directional_bias = 0.0;
+
+    // Calculate acceleration (change in velocity)
+    if(valid_intervals >= 3)
     {
-        Print("TICK VELOCITY: ", velocity, " points/second | Valid intervals: ", valid_intervals, " | Threshold: ", MinTickVelocity);
-        last_velocity_debug = TimeCurrent();
+        double early_avg = (velocities[valid_intervals-1] + velocities[valid_intervals-2]) / 2.0;
+        double recent_avg = (velocities[0] + velocities[1]) / 2.0;
+        result.acceleration = (recent_avg - early_avg) / early_avg;
+        if(point > 0) result.acceleration /= point;
     }
-
-    return velocity;
 }
 
 //+------------------------------------------------------------------+
-//| Check tick velocity alignment with signal                      |
+//| Calculate tick microstructure patterns                         |
+//+------------------------------------------------------------------+
+void CalculateTickMicrostructure(const MqlTick &ticks[], int tick_count, TickAnalysisData &result)
+{
+    if(tick_count < TickPatternWindow) return;
+
+    double price_moves[];
+    double time_intervals[];
+    ArrayResize(price_moves, TickPatternWindow);
+    ArrayResize(time_intervals, TickPatternWindow);
+
+    // Calculate price moves and time intervals
+    double total_distance = 0.0;
+    double net_distance = 0.0;
+
+    for(int i = 0; i < TickPatternWindow - 1; i++)
+    {
+        double mid_current = (ticks[i].bid + ticks[i].ask) / 2.0;
+        double mid_next = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
+
+        price_moves[i] = mid_current - mid_next;
+        time_intervals[i] = (double)(ticks[i].time_msc - ticks[i+1].time_msc);
+
+        total_distance += MathAbs(price_moves[i]);
+        net_distance += price_moves[i];
+    }
+
+    // Calculate tick efficiency (how direct the price movement is)
+    double start_price = (ticks[TickPatternWindow-1].bid + ticks[TickPatternWindow-1].ask) / 2.0;
+    double end_price = (ticks[0].bid + ticks[0].ask) / 2.0;
+    double direct_distance = MathAbs(end_price - start_price);
+
+    result.tick_efficiency = (total_distance > 0) ? direct_distance / total_distance : 0.0;
+
+    // Calculate momentum score based on consistent direction
+    int positive_moves = 0;
+    int negative_moves = 0;
+    double momentum_strength = 0.0;
+
+    for(int i = 0; i < TickPatternWindow - 1; i++)
+    {
+        if(price_moves[i] > 0)
+        {
+            positive_moves++;
+            momentum_strength += price_moves[i];
+        }
+        else if(price_moves[i] < 0)
+        {
+            negative_moves++;
+            momentum_strength += MathAbs(price_moves[i]);
+        }
+    }
+
+    // Momentum score: 0-100, higher = more directional
+    double directional_ratio = (double)MathMax(positive_moves, negative_moves) / (TickPatternWindow - 1);
+    result.momentum_score = directional_ratio * 100.0;
+
+    // Count consecutive moves in same direction
+    result.consecutive_direction = 0;
+    int current_streak = 0;
+    int max_streak = 0;
+    double last_direction = 0;
+
+    for(int i = 0; i < TickPatternWindow - 1; i++)
+    {
+        double current_direction = (price_moves[i] > 0) ? 1 : (price_moves[i] < 0) ? -1 : 0;
+
+        if(current_direction != 0)
+        {
+            if(current_direction == last_direction)
+            {
+                current_streak++;
+            }
+            else
+            {
+                max_streak = MathMax(max_streak, current_streak);
+                current_streak = 1;
+                last_direction = current_direction;
+            }
+        }
+    }
+    result.consecutive_direction = MathMax(max_streak, current_streak);
+}
+
+//+------------------------------------------------------------------+
+//| Calculate bid/ask spread pressure and imbalance                |
+//+------------------------------------------------------------------+
+void CalculateBidAskPressure(const MqlTick &ticks[], int tick_count, TickAnalysisData &result)
+{
+    if(tick_count < 5) return;
+
+    double spread_sum = 0.0;
+    double spread_variance = 0.0;
+    double bid_pressure = 0.0;
+    double ask_pressure = 0.0;
+    double volume_weighted_mid = 0.0;
+    double total_volume = 0.0;
+
+    // Calculate average spread and pressure metrics
+    for(int i = 0; i < MathMin(tick_count, 10); i++) // Use last 10 ticks
+    {
+        double spread = ticks[i].ask - ticks[i].bid;
+        double mid_price = (ticks[i].bid + ticks[i].ask) / 2.0;
+        double volume = (double)ticks[i].volume;
+
+        spread_sum += spread;
+
+        // Weight by volume if available
+        if(volume > 0)
+        {
+            volume_weighted_mid += mid_price * volume;
+            total_volume += volume;
+        }
+
+        // Analyze price movement relative to bid/ask
+        if(i < tick_count - 1)
+        {
+            double prev_mid = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
+            double price_change = mid_price - prev_mid;
+
+            if(price_change > 0)
+            {
+                // Price moved up - more ask pressure (buying)
+                ask_pressure += MathAbs(price_change);
+            }
+            else if(price_change < 0)
+            {
+                // Price moved down - more bid pressure (selling)
+                bid_pressure += MathAbs(price_change);
+            }
+        }
+    }
+
+    double avg_spread = spread_sum / MathMin(tick_count, 10);
+
+    // Calculate spread pressure (-1 = bid pressure, +1 = ask pressure)
+    double total_pressure = bid_pressure + ask_pressure;
+    if(total_pressure > 0)
+    {
+        result.spread_pressure = (ask_pressure - bid_pressure) / total_pressure;
+    }
+    else
+    {
+        result.spread_pressure = 0.0;
+    }
+
+    // Calculate volume weighted average price if volume data available
+    if(total_volume > 0)
+    {
+        result.volume_weighted_price = volume_weighted_mid / total_volume;
+    }
+    else
+    {
+        result.volume_weighted_price = (ticks[0].bid + ticks[0].ask) / 2.0;
+    }
+
+    // Check for spread volatility (sign of market stress)
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+    double normal_spread = 2.0 * point; // Assume 2 points is normal for DAX
+
+    if(avg_spread > normal_spread * MaxSpreadVolatility)
+    {
+        // High spread volatility - reduce confidence in signals
+        result.momentum_score *= 0.7;
+        result.tick_efficiency *= 0.8;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate tick patterns and advanced momentum                  |
+//+------------------------------------------------------------------+
+void CalculateTickPatterns(const MqlTick &ticks[], int tick_count, TickAnalysisData &result)
+{
+    if(tick_count < TickPatternWindow) return;
+
+    // Analyze tick patterns for acceleration/deceleration
+    double early_velocity = 0.0;
+    double recent_velocity = 0.0;
+    int early_count = 0;
+    int recent_count = 0;
+
+    // Calculate early period velocity (older ticks)
+    int early_start = tick_count - TickPatternWindow;
+    int early_end = tick_count - (TickPatternWindow / 2);
+
+    for(int i = early_start; i < early_end - 1; i++)
+    {
+        if(i >= 0 && i < tick_count - 1)
+        {
+            double mid_current = (ticks[i].bid + ticks[i].ask) / 2.0;
+            double mid_next = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
+            double time_diff = (double)(ticks[i].time_msc - ticks[i+1].time_msc);
+
+            if(time_diff > 0)
+            {
+                early_velocity += MathAbs(mid_current - mid_next) / time_diff;
+                early_count++;
+            }
+        }
+    }
+
+    // Calculate recent period velocity (newer ticks)
+    int recent_start = 0;
+    int recent_end = TickPatternWindow / 2;
+
+    for(int i = recent_start; i < recent_end - 1; i++)
+    {
+        double mid_current = (ticks[i].bid + ticks[i].ask) / 2.0;
+        double mid_next = (ticks[i+1].bid + ticks[i+1].ask) / 2.0;
+        double time_diff = (double)(ticks[i].time_msc - ticks[i+1].time_msc);
+
+        if(time_diff > 0)
+        {
+            recent_velocity += MathAbs(mid_current - mid_next) / time_diff;
+            recent_count++;
+        }
+    }
+
+    // Calculate acceleration/deceleration
+    if(early_count > 0 && recent_count > 0)
+    {
+        early_velocity /= early_count;
+        recent_velocity /= recent_count;
+
+        if(early_velocity > 0)
+        {
+            double velocity_change = (recent_velocity - early_velocity) / early_velocity;
+
+            // Update acceleration in result
+            if(velocity_change > TickAccelerationThreshold)
+            {
+                result.acceleration = velocity_change;
+                // Boost momentum score for acceleration
+                result.momentum_score = MathMin(100.0, result.momentum_score * 1.2);
+            }
+            else if(velocity_change < -TickAccelerationThreshold)
+            {
+                result.acceleration = velocity_change;
+                // Reduce momentum score for deceleration
+                result.momentum_score *= 0.8;
+            }
+        }
+    }
+
+    // Detect reversal patterns (consecutive ticks in opposite direction)
+    int direction_changes = 0;
+    double last_price = (ticks[TickPatternWindow-1].bid + ticks[TickPatternWindow-1].ask) / 2.0;
+    int last_direction = 0;
+
+    for(int i = TickPatternWindow - 2; i >= 0; i--)
+    {
+        double current_price = (ticks[i].bid + ticks[i].ask) / 2.0;
+        int current_direction = (current_price > last_price) ? 1 : (current_price < last_price) ? -1 : 0;
+
+        if(current_direction != 0 && last_direction != 0 && current_direction != last_direction)
+        {
+            direction_changes++;
+        }
+
+        last_price = current_price;
+        last_direction = current_direction;
+    }
+
+    // Adjust momentum score based on direction changes
+    double stability_factor = 1.0 - ((double)direction_changes / (TickPatternWindow - 1));
+    result.momentum_score *= stability_factor;
+}
+
+//+------------------------------------------------------------------+
+//| Advanced tick velocity alignment check                         |
 //+------------------------------------------------------------------+
 bool CheckTickVelocityAlignment(int signal_direction)
 {
-    if(!UseTickVelocity)
+    if(!UseTickVelocity && !UseTickMicrostructure)
         return true; // Skip check if disabled
 
-    double velocity = AnalyzeTickVelocity();
+    TickAnalysisData tick_data = AnalyzeAdvancedTickData();
 
-    // High velocity indicates momentum - good for breakouts
-    // Low velocity indicates consolidation - good for mean reversion
-
-    if(signal_direction != 0) // Any signal
+    if(!tick_data.is_valid)
     {
-        // Require minimum velocity for any signal
-        bool velocity_sufficient = velocity >= MinTickVelocity;
-
-        if(!velocity_sufficient)
+        static datetime last_warning = 0;
+        if(TimeCurrent() - last_warning > 300) // Warn every 5 minutes
         {
-            Print("DEBUG: Tick velocity too low for signal. Velocity: ", velocity, " < Threshold: ", MinTickVelocity);
+            Print("WARNING: Invalid tick data for velocity alignment check");
+            last_warning = TimeCurrent();
         }
-
-        return velocity_sufficient;
+        return true; // Allow trade if data is invalid (fail-safe)
     }
 
-    return true; // No signal, no velocity requirement
+    bool velocity_check = true;
+    bool momentum_check = true;
+    bool microstructure_check = true;
+    bool spread_check = true;
+
+    // 1. Basic velocity check
+    if(UseTickVelocity)
+    {
+        velocity_check = tick_data.velocity >= MinTickVelocity;
+
+        if(!velocity_check)
+        {
+            Print("DEBUG: Tick velocity too low. Velocity: ", DoubleToString(tick_data.velocity, 2),
+                  " < Threshold: ", MinTickVelocity);
+        }
+    }
+
+    // 2. Directional momentum check
+    if(UseTickMicrostructure && signal_direction != 0)
+    {
+        // For BUY signals, prefer positive directional bias
+        if(signal_direction > 0)
+        {
+            momentum_check = (tick_data.directional_bias > -0.3 && tick_data.momentum_score > 30.0);
+
+            if(!momentum_check)
+            {
+                Print("DEBUG: BUY momentum check failed. Bias: ", DoubleToString(tick_data.directional_bias, 3),
+                      " Score: ", DoubleToString(tick_data.momentum_score, 1));
+            }
+        }
+        // For SELL signals, prefer negative directional bias
+        else if(signal_direction < 0)
+        {
+            momentum_check = (tick_data.directional_bias < 0.3 && tick_data.momentum_score > 30.0);
+
+            if(!momentum_check)
+            {
+                Print("DEBUG: SELL momentum check failed. Bias: ", DoubleToString(tick_data.directional_bias, 3),
+                      " Score: ", DoubleToString(tick_data.momentum_score, 1));
+            }
+        }
+    }
+
+    // 3. Microstructure quality check
+    if(UseTickMicrostructure)
+    {
+        // Require reasonable tick efficiency and consecutive direction
+        microstructure_check = (tick_data.tick_efficiency > 0.3 &&
+                               tick_data.consecutive_direction >= 2);
+
+        if(!microstructure_check)
+        {
+            Print("DEBUG: Microstructure check failed. Efficiency: ", DoubleToString(tick_data.tick_efficiency, 3),
+                  " Consecutive: ", tick_data.consecutive_direction);
+        }
+    }
+
+    // 4. Spread pressure check
+    if(UseBidAskAnalysis && signal_direction != 0)
+    {
+        // For BUY signals, prefer positive spread pressure (ask pressure)
+        if(signal_direction > 0)
+        {
+            spread_check = tick_data.spread_pressure > -0.5; // Allow some bid pressure
+        }
+        // For SELL signals, prefer negative spread pressure (bid pressure)
+        else if(signal_direction < 0)
+        {
+            spread_check = tick_data.spread_pressure < 0.5; // Allow some ask pressure
+        }
+
+        if(!spread_check)
+        {
+            Print("DEBUG: Spread pressure check failed. Direction: ", signal_direction,
+                  " Pressure: ", DoubleToString(tick_data.spread_pressure, 3));
+        }
+    }
+
+    // 5. Acceleration bonus/penalty
+    bool acceleration_bonus = false;
+    if(UseTickMicrostructure && MathAbs(tick_data.acceleration) > TickAccelerationThreshold)
+    {
+        // Positive acceleration in signal direction is good
+        if((signal_direction > 0 && tick_data.acceleration > 0) ||
+           (signal_direction < 0 && tick_data.acceleration < 0))
+        {
+            acceleration_bonus = true;
+            Print("DEBUG: Acceleration bonus applied. Acceleration: ", DoubleToString(tick_data.acceleration, 3));
+        }
+    }
+
+    // Combine all checks
+    bool basic_checks = velocity_check && momentum_check && microstructure_check && spread_check;
+
+    // Allow trade if basic checks pass OR if we have acceleration bonus with most checks passing
+    bool result = basic_checks || (acceleration_bonus && velocity_check && momentum_check);
+
+    if(!result)
+    {
+        Print("DEBUG: Advanced tick analysis REJECTED signal. V:", velocity_check,
+              " M:", momentum_check, " MS:", microstructure_check, " S:", spread_check);
+    }
+    else if(acceleration_bonus)
+    {
+        Print("DEBUG: Advanced tick analysis APPROVED signal with acceleration bonus");
+    }
+
+    return result;
+}
+
+//+------------------------------------------------------------------+
+//| Get simple tick velocity (for backward compatibility)          |
+//+------------------------------------------------------------------+
+double AnalyzeTickVelocity()
+{
+    TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+    return tick_data.is_valid ? tick_data.velocity : 1.0;
+}
+
+//+------------------------------------------------------------------+
+//| Get tick pattern type for strategy optimization               |
+//+------------------------------------------------------------------+
+ENUM_TICK_PATTERN GetCurrentTickPattern()
+{
+    TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+
+    if(!tick_data.is_valid)
+        return TICK_PATTERN_NONE;
+
+    // Determine pattern based on tick analysis
+    if(MathAbs(tick_data.acceleration) > TickAccelerationThreshold)
+    {
+        return (tick_data.acceleration > 0) ? TICK_PATTERN_ACCELERATION : TICK_PATTERN_DECELERATION;
+    }
+
+    if(tick_data.consecutive_direction >= 5)
+    {
+        return TICK_PATTERN_ACCELERATION; // Strong directional movement
+    }
+
+    if(tick_data.momentum_score < 20.0 && tick_data.tick_efficiency < 0.3)
+    {
+        return TICK_PATTERN_CONSOLIDATION; // Low momentum, inefficient movement
+    }
+
+    if(tick_data.consecutive_direction <= 1 && tick_data.momentum_score < 40.0)
+    {
+        return TICK_PATTERN_REVERSAL; // Frequent direction changes
+    }
+
+    return TICK_PATTERN_NONE;
+}
+
+//+------------------------------------------------------------------+
+//| Check if tick conditions favor mean reversion strategy        |
+//+------------------------------------------------------------------+
+bool IsTickConditionFavoringMeanReversion()
+{
+    TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+
+    if(!tick_data.is_valid)
+        return true; // Default to allowing mean reversion
+
+    // Mean reversion works better with:
+    // - Low momentum scores (choppy movement)
+    // - Low tick efficiency (inefficient price movement)
+    // - Balanced spread pressure
+    // - Low acceleration
+
+    bool low_momentum = tick_data.momentum_score < 50.0;
+    bool low_efficiency = tick_data.tick_efficiency < 0.5;
+    bool balanced_pressure = MathAbs(tick_data.spread_pressure) < 0.6;
+    bool low_acceleration = MathAbs(tick_data.acceleration) < TickAccelerationThreshold;
+
+    return (low_momentum && low_efficiency && balanced_pressure && low_acceleration);
+}
+
+//+------------------------------------------------------------------+
+//| Check if tick conditions favor breakout strategy              |
+//+------------------------------------------------------------------+
+bool IsTickConditionFavoringBreakout()
+{
+    TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+
+    if(!tick_data.is_valid)
+        return true; // Default to allowing breakouts
+
+    // Breakouts work better with:
+    // - High momentum scores (directional movement)
+    // - High tick efficiency (direct price movement)
+    // - Strong spread pressure in breakout direction
+    // - Positive acceleration
+
+    bool high_momentum = tick_data.momentum_score > 60.0;
+    bool high_efficiency = tick_data.tick_efficiency > 0.6;
+    bool strong_pressure = MathAbs(tick_data.spread_pressure) > 0.3;
+    bool positive_acceleration = tick_data.acceleration > 0;
+
+    return (high_momentum && high_efficiency && strong_pressure && positive_acceleration);
 }
 
 //+------------------------------------------------------------------+
@@ -1242,15 +2039,50 @@ void DebugSignalQuality()
         Print("Momentum Quality: ", momentum_quality);
     }
 
-    // Additional tick velocity debug info
+    // Advanced tick analysis debug info
+    Print("=== TICK ANALYSIS DEBUG ===");
     Print("Tick Velocity Check Enabled: ", UseTickVelocity);
-    if(UseTickVelocity)
+    Print("Tick Microstructure Enabled: ", UseTickMicrostructure);
+    Print("Bid/Ask Analysis Enabled: ", UseBidAskAnalysis);
+
+    if(UseTickVelocity || UseTickMicrostructure)
     {
-        Print("Tick Velocity Window: ", TickVelocityWindow);
-        Print("Min Tick Velocity: ", MinTickVelocity);
-        double current_velocity = AnalyzeTickVelocity();
-        Print("Current Tick Velocity: ", current_velocity, " points/second");
+        TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+        if(tick_data.is_valid)
+        {
+            Print("Current Tick Velocity: ", DoubleToString(tick_data.velocity, 2), " points/second (Min: ", MinTickVelocity, ")");
+            Print("Tick Acceleration: ", DoubleToString(tick_data.acceleration, 3));
+            Print("Momentum Score: ", DoubleToString(tick_data.momentum_score, 1), "/100");
+            Print("Directional Bias: ", DoubleToString(tick_data.directional_bias, 3), " (-1=down, +1=up)");
+            Print("Consecutive Direction: ", tick_data.consecutive_direction, " ticks");
+            Print("Tick Efficiency: ", DoubleToString(tick_data.tick_efficiency, 3), " (0-1)");
+
+            if(UseBidAskAnalysis)
+            {
+                Print("Spread Pressure: ", DoubleToString(tick_data.spread_pressure, 3), " (-1=bid, +1=ask)");
+                Print("Volume Weighted Price: ", DoubleToString(tick_data.volume_weighted_price, _Digits));
+            }
+
+            ENUM_TICK_PATTERN pattern = GetCurrentTickPattern();
+            string pattern_name = "NONE";
+            switch(pattern)
+            {
+                case TICK_PATTERN_ACCELERATION: pattern_name = "ACCELERATION"; break;
+                case TICK_PATTERN_DECELERATION: pattern_name = "DECELERATION"; break;
+                case TICK_PATTERN_REVERSAL: pattern_name = "REVERSAL"; break;
+                case TICK_PATTERN_CONSOLIDATION: pattern_name = "CONSOLIDATION"; break;
+            }
+            Print("Current Tick Pattern: ", pattern_name);
+
+            Print("Favors Mean Reversion: ", IsTickConditionFavoringMeanReversion());
+            Print("Favors Breakout: ", IsTickConditionFavoringBreakout());
+        }
+        else
+        {
+            Print("Tick analysis data is INVALID");
+        }
     }
+    Print("===========================");
 
     // Volume confirmation check
     bool volume_confirmed = g_current_volume_ratio >= MinVolumeMultiplier;
@@ -1277,6 +2109,53 @@ double CalculatePositionSize(ENUM_SIGNAL_QUALITY quality)
         risk_amount *= 1.3; // Increase risk for excellent signals
     else if(quality == SIGNAL_FAIR)
         risk_amount *= 0.7; // Reduce risk for fair signals
+
+    // Advanced tick-based position sizing adjustments
+    if(UseTickMicrostructure || UseTickVelocity)
+    {
+        TickAnalysisData tick_data = AnalyzeAdvancedTickData();
+        if(tick_data.is_valid)
+        {
+            double tick_multiplier = 1.0;
+
+            // Increase size for high-quality tick conditions
+            if(tick_data.momentum_score > 70.0 && tick_data.tick_efficiency > 0.7)
+            {
+                tick_multiplier *= 1.15; // 15% increase for excellent tick conditions
+                Print("Tick Analysis: Excellent conditions - size increased by 15%");
+            }
+            else if(tick_data.momentum_score < 30.0 || tick_data.tick_efficiency < 0.3)
+            {
+                tick_multiplier *= 0.85; // 15% decrease for poor tick conditions
+                Print("Tick Analysis: Poor conditions - size reduced by 15%");
+            }
+
+            // Adjust for acceleration
+            if(MathAbs(tick_data.acceleration) > TickAccelerationThreshold)
+            {
+                if(tick_data.acceleration > 0)
+                {
+                    tick_multiplier *= 1.1; // 10% increase for positive acceleration
+                    Print("Tick Analysis: Positive acceleration - size increased by 10%");
+                }
+                else
+                {
+                    tick_multiplier *= 0.9; // 10% decrease for negative acceleration
+                    Print("Tick Analysis: Negative acceleration - size reduced by 10%");
+                }
+            }
+
+            // Adjust for spread pressure quality
+            if(UseBidAskAnalysis && MathAbs(tick_data.spread_pressure) > 0.5)
+            {
+                tick_multiplier *= 1.05; // 5% increase for strong spread pressure
+                Print("Tick Analysis: Strong spread pressure - size increased by 5%");
+            }
+
+            risk_amount *= tick_multiplier;
+            Print("Final tick multiplier applied: ", DoubleToString(tick_multiplier, 3));
+        }
+    }
 
     // Adjust for consecutive losses
     if(g_consecutive_losses >= 1)

@@ -51,3 +51,11 @@ Pure price action - Support/resistance baseret på actual touch points
 Statistical models - Rolling correlations, variance ratios
 Market microstructure - Order flow imbalance proxies
 Time-series analysis - Autoregressive patterns i returns
+
+
+
+Simplificer signal generation - Du har for mange parametre der kan over-optimize
+Implementer proper tick-level analysis - Din tick velocity er god, men kan forbedres
+Add correlation filters - Undgå trades når DAX korrelerer højt med andre indices
+Forbedret error handling - Mere robust connection recovery
+Memory optimization - Reducer array operations i OnTick

@@ -1,0 +1,72 @@
+Hvad kan vi gøre for at gøre winrate højere på strategien? 
+
+backtest 01 august 2024 - 31 august 2025 stats: 
+Trades 306
+Short winrate 37,17%
+Long winrate 34,78%
+samlet winrate 36,27% 
+Netto indtjening 4433USD 
+Profit faktor 1.12
+Gendannelses faktor 0.30
+Sharpe ratio 1.90
+Største profitgivende handel 3610USD
+Største tabs trade 863USD
+Gennemsnitlig profithandel 381USD
+Gennemsnitlig tabt handel 194USD
+Z-Score -156 (37,59%)
+LR Korrelation -0.23
+
+
+Dette er uden MACD confirmation, hvis jeg sætter den til "true" Bliver der slet ikke foretaget trades. 
+
+Inputs 8-20 trading hours
+ADX Threshhold 25.0
+Trend strength 0.5
+Signal strenght 0.5
+Use pullback entries true
+breakout continuation logic true
+Price above/below both EMA´s true
+Allow entries when price is between EMA´s but EMA´s are crossed true
+Higher timeframe bias true H4
+MTF Bias strength 0.8
+Allow trades against MTF Bias true
+Enable market regime detection true
+Enable regime based position sizing true
+regime based stop/target levels true
+
+
+###
+Nye settings
+
+Ny backtest 01 august 2024 - 31 august 2025 stats:  
+Trades 38 
+Short winrate 39,13% 
+Long winrate 20% 
+samlet winrate 31,58%  
+Netto indtjening -877USD  
+Profit faktor 0,82 
+Gendannelses faktor -0.21 
+Sharpe ratio -3,80 
+Største profitgivende handel 1481USD 
+Største tabs trade 771USD 
+Gennemsnitlig profithandel 325USD 
+Gennemsnitlig tabt handel 184USD 
+Z-Score -0,35 (27,37%) 
+LR Korrelation -0.71 
+
+ 
+
+Inputs 8-20 trading hours
+ADX Threshhold 25.0
+Trend strength 0.5
+Signal strenght 0.5
+Use pullback entries true
+breakout continuation logic true
+Price above/below both EMA´s true
+Allow entries when price is between EMA´s but EMA´s are crossed true
+Higher timeframe bias true H4
+MTF Bias strength 0.8
+Allow trades against MTF Bias true
+Enable market regime detection true
+Enable regime based position sizing true
+regime based stop/target levels true

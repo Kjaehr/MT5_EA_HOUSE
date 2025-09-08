@@ -1,0 +1,3347 @@
+1127 High Ridge Road #135, Stamford, CT 06905 3
+† Free University of Tbilisi, Business School & School of Physics
+240, David Agmashenebeli Alley, Tbilisi, 0159, Georgia
+] Universidad del CEMA
+Av. C´ordoba 374, C1054AAP, Ciudad de Buenos Aires, Argentina
+(August 17, 2018)
+ZK: To my mother Mila and my children Mirabelle and Maximilien
+JAS: To my parents, Claudio and Andrea, and my brother Emiliano
+Abstract
+We provide detailed descriptions, including over 550 mathematical formulas, for over 150 trading strategies across a host of asset classes (and trading
+styles). This includes stocks, options, fixed income, futures, ETFs, indexes,
+commodities, foreign exchange, convertibles, structured assets, volatility (as
+an asset class), real estate, distressed assets, cash, cryptocurrencies, miscellany (such as weather, energy, inflation), global macro, infrastructure, and tax
+arbitrage. Some strategies are based on machine learning algorithms (such as
+artificial neural networks, Bayes, k-nearest neighbors). We also give: source
+code for illustrating out-of-sample backtesting with explanatory notes; around
+2,000 bibliographic references; and over 900 glossary, acronym and math definitions. The presentation is intended to be descriptive and pedagogical.
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights Reserved.
+1 Zura Kakushadze, Ph.D., is the President and CEO of Quantigicr Solutions LLC, and a Full
+Professor at Free University of Tbilisi. Email: zura@quantigic.com
+2 Juan Andr´es Serur, M.Fin., is an Assistant Professor at University of CEMA. Email:
+jaserur15@ucema.edu.ar
+3 DISCLAIMER: This address is used by the corresponding author for no purpose other than
+to indicate his professional affiliation as is customary in publications. In particular, the contents
+of this paper are not intended as an investment, legal, tax or any other such advice, and in no
+way represent views of Quantigicr Solutions LLC, the website www.quantigic.com or any of their
+other affiliates.
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Contents
+Praises of 151 Trading Strategies 7
+Author Biographies 9
+Preface (by Zura Kakushadze) 10
+1 Introduction and Summary 15
+2 Options 17
+2.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+2.2 Strategy: Covered call . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+2.3 Strategy: Covered put . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+2.4 Strategy: Protective put . . . . . . . . . . . . . . . . . . . . . . . . . 19
+2.5 Strategy: Protective call . . . . . . . . . . . . . . . . . . . . . . . . . 19
+2.6 Strategy: Bull call spread . . . . . . . . . . . . . . . . . . . . . . . . 19
+2.7 Strategy: Bull put spread . . . . . . . . . . . . . . . . . . . . . . . . 20
+2.8 Strategy: Bear call spread . . . . . . . . . . . . . . . . . . . . . . . . 20
+2.9 Strategy: Bear put spread . . . . . . . . . . . . . . . . . . . . . . . . 20
+2.10 Strategy: Long synthetic forward . . . . . . . . . . . . . . . . . . . . 21
+2.11 Strategy: Short synthetic forward . . . . . . . . . . . . . . . . . . . . 21
+2.12 Strategy: Long combo . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+2.13 Strategy: Short combo . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+2.14 Strategy: Bull call ladder . . . . . . . . . . . . . . . . . . . . . . . . . 22
+2.15 Strategy: Bull put ladder . . . . . . . . . . . . . . . . . . . . . . . . . 23
+2.16 Strategy: Bear call ladder . . . . . . . . . . . . . . . . . . . . . . . . 23
+2.17 Strategy: Bear put ladder . . . . . . . . . . . . . . . . . . . . . . . . 23
+2.18 Strategy: Calendar call spread . . . . . . . . . . . . . . . . . . . . . . 24
+2.19 Strategy: Calendar put spread . . . . . . . . . . . . . . . . . . . . . . 24
+2.20 Strategy: Diagonal call spread . . . . . . . . . . . . . . . . . . . . . . 25
+2.21 Strategy: Diagonal put spread . . . . . . . . . . . . . . . . . . . . . . 25
+2.22 Strategy: Long straddle . . . . . . . . . . . . . . . . . . . . . . . . . 26
+2.23 Strategy: Long strangle . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+2.24 Strategy: Long guts . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+2.25 Strategy: Short straddle . . . . . . . . . . . . . . . . . . . . . . . . . 27
+2.26 Strategy: Short strangle . . . . . . . . . . . . . . . . . . . . . . . . . 27
+2.27 Strategy: Short guts . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+2.28 Strategy: Long call synthetic straddle . . . . . . . . . . . . . . . . . . 28
+2.29 Strategy: Long put synthetic straddle . . . . . . . . . . . . . . . . . . 28
+2.30 Strategy: Short call synthetic straddle . . . . . . . . . . . . . . . . . 28
+2.31 Strategy: Short put synthetic straddle . . . . . . . . . . . . . . . . . 29
+2.32 Strategy: Covered short straddle . . . . . . . . . . . . . . . . . . . . 29
+2.33 Strategy: Covered short strangle . . . . . . . . . . . . . . . . . . . . . 29
+1
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.34 Strategy: Strap . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+2.35 Strategy: Strip . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+2.36 Strategy: Call ratio backspread . . . . . . . . . . . . . . . . . . . . . 30
+2.37 Strategy: Put ratio backspread . . . . . . . . . . . . . . . . . . . . . 31
+2.38 Strategy: Ratio call spread . . . . . . . . . . . . . . . . . . . . . . . . 31
+2.39 Strategy: Ratio put spread . . . . . . . . . . . . . . . . . . . . . . . . 31
+2.40 Strategy: Long call butterfly . . . . . . . . . . . . . . . . . . . . . . . 32
+2.40.1 Strategy: Modified call butterfly . . . . . . . . . . . . . . . . . 32
+2.41 Strategy: Long put butterfly . . . . . . . . . . . . . . . . . . . . . . . 32
+2.41.1 Strategy: Modified put butterfly . . . . . . . . . . . . . . . . . 33
+2.42 Strategy: Short call butterfly . . . . . . . . . . . . . . . . . . . . . . 33
+2.43 Strategy: Short put butterfly . . . . . . . . . . . . . . . . . . . . . . 33
+2.44 Strategy: “Long” iron butterfly . . . . . . . . . . . . . . . . . . . . . 34
+2.45 Strategy: “Short” iron butterfly . . . . . . . . . . . . . . . . . . . . . 34
+2.46 Strategy: Long call condor . . . . . . . . . . . . . . . . . . . . . . . . 34
+2.47 Strategy: Long put condor . . . . . . . . . . . . . . . . . . . . . . . . 35
+2.48 Strategy: Short call condor . . . . . . . . . . . . . . . . . . . . . . . . 35
+2.49 Strategy: Short put condor . . . . . . . . . . . . . . . . . . . . . . . . 35
+2.50 Strategy: Long iron condor . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.51 Strategy: Short iron condor . . . . . . . . . . . . . . . . . . . . . . . 36
+2.52 Strategy: Long box . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.53 Strategy: Collar . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.54 Strategy: Bullish short seagull spread . . . . . . . . . . . . . . . . . . 37
+2.55 Strategy: Bearish long seagull spread . . . . . . . . . . . . . . . . . . 38
+2.56 Strategy: Bearish short seagull spread . . . . . . . . . . . . . . . . . 38
+2.57 Strategy: Bullish long seagull spread . . . . . . . . . . . . . . . . . . 39
+3 Stocks 40
+3.1 Strategy: Price-momentum . . . . . . . . . . . . . . . . . . . . . . . . 40
+3.2 Strategy: Earnings-momentum . . . . . . . . . . . . . . . . . . . . . . 41
+3.3 Strategy: Value . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+3.4 Strategy: Low-volatility anomaly . . . . . . . . . . . . . . . . . . . . 42
+3.5 Strategy: Implied volatility . . . . . . . . . . . . . . . . . . . . . . . . 43
+3.6 Strategy: Multifactor portfolio . . . . . . . . . . . . . . . . . . . . . . 43
+3.7 Strategy: Residual momentum . . . . . . . . . . . . . . . . . . . . . . 44
+3.8 Strategy: Pairs trading . . . . . . . . . . . . . . . . . . . . . . . . . . 45
+3.9 Strategy: Mean-reversion – single cluster . . . . . . . . . . . . . . . . 46
+3.9.1 Strategy: Mean-reversion – multiple clusters . . . . . . . . . . 47
+3.10 Mean-reversion – weighted regression . . . . . . . . . . . . . . . . . . 49
+3.11 Strategy: Single moving average . . . . . . . . . . . . . . . . . . . . . 49
+3.12 Strategy: Two moving averages . . . . . . . . . . . . . . . . . . . . . 50
+3.13 Strategy: Three moving averages . . . . . . . . . . . . . . . . . . . . 51
+3.14 Strategy: Support and resistance . . . . . . . . . . . . . . . . . . . . 51
+2
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.15 Strategy: Channel . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52
+3.16 Strategy: Event-driven – M&A . . . . . . . . . . . . . . . . . . . . . 52
+3.17 Strategy: Machine learning – single-stock KNN . . . . . . . . . . . . 53
+3.18 Strategy: Statistical arbitrage – optimization . . . . . . . . . . . . . . 55
+3.18.1 Dollar-neutrality . . . . . . . . . . . . . . . . . . . . . . . . . 56
+3.19 Strategy: Market-making . . . . . . . . . . . . . . . . . . . . . . . . . 58
+3.20 Strategy: Alpha combos . . . . . . . . . . . . . . . . . . . . . . . . . 59
+3.21 A few comments . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 60
+4 Exchange-traded funds (ETFs) 61
+4.1 Strategy: Sector momentum rotation . . . . . . . . . . . . . . . . . . 61
+4.1.1 Strategy: Sector momentum rotation with MA filter . . . . . . 62
+4.1.2 Strategy: Dual-momentum sector rotation . . . . . . . . . . . 62
+4.2 Strategy: Alpha rotation . . . . . . . . . . . . . . . . . . . . . . . . . 63
+4.3 Strategy: R-squared . . . . . . . . . . . . . . . . . . . . . . . . . . . 63
+4.4 Strategy: Mean-reversion . . . . . . . . . . . . . . . . . . . . . . . . . 64
+4.5 Strategy: Leveraged ETFs (LETFs) . . . . . . . . . . . . . . . . . . . 64
+4.6 Strategy: Multi-asset trend following . . . . . . . . . . . . . . . . . . 65
+5 Fixed Income 66
+5.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+5.1.1 Zero-coupon bonds . . . . . . . . . . . . . . . . . . . . . . . . 66
+5.1.2 Bonds with coupons . . . . . . . . . . . . . . . . . . . . . . . 66
+5.1.3 Floating rate bonds . . . . . . . . . . . . . . . . . . . . . . . . 67
+5.1.4 Swaps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+5.1.5 Duration and convexity . . . . . . . . . . . . . . . . . . . . . . 68
+5.2 Strategy: Bullets . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+5.3 Strategy: Barbells . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+5.4 Strategy: Ladders . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+5.5 Strategy: Bond immunization . . . . . . . . . . . . . . . . . . . . . . 70
+5.6 Strategy: Dollar-duration-neutral butterfly . . . . . . . . . . . . . . . 71
+5.7 Strategy: Fifty-fifty butterfly . . . . . . . . . . . . . . . . . . . . . . 72
+5.8 Strategy: Regression-weighted butterfly . . . . . . . . . . . . . . . . . 72
+5.8.1 Strategy: Maturity-weighted butterfly . . . . . . . . . . . . . . 73
+5.9 Strategy: Low-risk factor . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5.10 Strategy: Value factor . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5.11 Strategy: Carry factor . . . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.12 Strategy: Rolling down the yield curve . . . . . . . . . . . . . . . . . 74
+5.13 Strategy: Yield curve spread (flatteners & steepeners) . . . . . . . . . 75
+5.14 Strategy: CDS basis arbitrage . . . . . . . . . . . . . . . . . . . . . . 75
+5.15 Strategy: Swap-spread arbitrage . . . . . . . . . . . . . . . . . . . . . 76
+3
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+6 Indexes 76
+6.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 76
+6.2 Strategy: Cash-and-carry arbitrage . . . . . . . . . . . . . . . . . . . 77
+6.3 Strategy: Dispersion trading in equity indexes . . . . . . . . . . . . . 77
+6.3.1 Strategy: Dispersion trading – subset portfolio . . . . . . . . . 78
+6.4 Strategy: Intraday arbitrage between index ETFs . . . . . . . . . . . 79
+6.5 Strategy: Index volatility targeting with risk-free asset . . . . . . . . 80
+7 Volatility 80
+7.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 80
+7.2 Strategy: VIX futures basis trading . . . . . . . . . . . . . . . . . . . 81
+7.3 Strategy: Volatility carry with two ETNs . . . . . . . . . . . . . . . . 82
+7.3.1 Strategy: Hedging short VXX with VIX futures . . . . . . . . 82
+7.4 Strategy: Volatility risk premium . . . . . . . . . . . . . . . . . . . . 83
+7.4.1 Strategy: Volatility risk premium with Gamma hedging . . . . 83
+7.5 Strategy: Volatility skew – long risk reversal . . . . . . . . . . . . . . 84
+7.6 Strategy: Volatility trading with variance swaps . . . . . . . . . . . . 84
+8 Foreign Exchange (FX) 85
+8.1 Strategy: Moving averages with HP filter . . . . . . . . . . . . . . . . 85
+8.2 Strategy: Carry trade . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+8.2.1 Strategy: High-minus-low carry . . . . . . . . . . . . . . . . . 87
+8.3 Strategy: Dollar carry trade . . . . . . . . . . . . . . . . . . . . . . . 88
+8.4 Strategy: Momentum & carry combo . . . . . . . . . . . . . . . . . . 88
+8.5 Strategy: FX triangular arbitrage . . . . . . . . . . . . . . . . . . . . 89
+9 Commodities 89
+9.1 Strategy: Roll yields . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+9.2 Strategy: Trading based on hedging pressure . . . . . . . . . . . . . . 90
+9.3 Strategy: Portfolio diversification with commodities . . . . . . . . . . 90
+9.4 Strategy: Value . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 90
+9.5 Strategy: Skewness premium . . . . . . . . . . . . . . . . . . . . . . . 91
+9.6 Strategy: Trading with pricing models . . . . . . . . . . . . . . . . . 91
+10 Futures 92
+10.1 Strategy: Hedging risk with futures . . . . . . . . . . . . . . . . . . . 92
+10.1.1 Strategy: Cross-hedging . . . . . . . . . . . . . . . . . . . . . 93
+10.1.2 Strategy: Interest rate risk hedging . . . . . . . . . . . . . . . 93
+10.2 Strategy: Calendar spread . . . . . . . . . . . . . . . . . . . . . . . . 94
+10.3 Strategy: Contrarian trading (mean-reversion) . . . . . . . . . . . . . 95
+10.3.1 Strategy: Contrarian trading – market activity . . . . . . . . . 95
+10.4 Strategy: Trend following (momentum) . . . . . . . . . . . . . . . . . 96
+4
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+11 Structured Assets 97
+11.1 Generalities: Collateralized Debt Obligations (CDOs) . . . . . . . . . 97
+11.2 Strategy: Carry, equity tranche – index hedging . . . . . . . . . . . . 99
+11.3 Strategy: Carry, senior/mezzanine – index hedging . . . . . . . . . . 99
+11.4 Strategy: Carry – tranche hedging . . . . . . . . . . . . . . . . . . . . 99
+11.5 Strategy: Carry – CDS hedging . . . . . . . . . . . . . . . . . . . . . 100
+11.6 Strategy: CDOs – curve trades . . . . . . . . . . . . . . . . . . . . . 100
+11.7 Strategy: Mortgage-backed security (MBS) trading . . . . . . . . . . 100
+12 Convertibles 101
+12.1 Strategy: Convertible arbitrage . . . . . . . . . . . . . . . . . . . . . 101
+12.2 Strategy: Convertible option-adjusted spread . . . . . . . . . . . . . . 102
+13 Tax Arbitrage 102
+13.1 Strategy: Municipal bond tax arbitrage . . . . . . . . . . . . . . . . . 102
+13.2 Strategy: Cross-border tax arbitrage . . . . . . . . . . . . . . . . . . 103
+13.2.1 Strategy: Cross-border tax arbitrage with options . . . . . . . 104
+14 Miscellaneous Assets 104
+14.1 Strategy: Inflation hedging – inflation swaps . . . . . . . . . . . . . . 104
+14.2 Strategy: TIPS-Treasury arbitrage . . . . . . . . . . . . . . . . . . . 105
+14.3 Strategy: Weather risk – demand hedging . . . . . . . . . . . . . . . 106
+14.4 Strategy: Energy – spark spread . . . . . . . . . . . . . . . . . . . . . 108
+15 Distressed Assets 108
+15.1 Strategy: Buying and holding distressed debt . . . . . . . . . . . . . 108
+15.2 Strategy: Active distressed investing . . . . . . . . . . . . . . . . . . 109
+15.2.1 Strategy: Planning a reorganization . . . . . . . . . . . . . . . 109
+15.2.2 Strategy: Buying outstanding debt . . . . . . . . . . . . . . . 109
+15.2.3 Strategy: Loan-to-own . . . . . . . . . . . . . . . . . . . . . . 110
+15.3 Strategy: Distress risk puzzle . . . . . . . . . . . . . . . . . . . . . . 110
+15.3.1 Strategy: Distress risk puzzle – risk management . . . . . . . 110
+16 Real Estate 111
+16.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 111
+16.2 Strategy: Mixed-asset diversification with real estate . . . . . . . . . 111
+16.3 Strategy: Intra-asset diversification within real estate . . . . . . . . . 112
+16.3.1 Strategy: Property type diversification . . . . . . . . . . . . . 112
+16.3.2 Strategy: Economic diversification . . . . . . . . . . . . . . . . 112
+16.3.3 Strategy: Property type and geographic diversification . . . . 113
+16.4 Strategy: Real estate momentum – regional approach . . . . . . . . . 113
+16.5 Strategy: Inflation hedging with real estate . . . . . . . . . . . . . . . 113
+16.6 Strategy: Fix-and-flip . . . . . . . . . . . . . . . . . . . . . . . . . . . 114
+5
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+17 Cash 114
+17.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 114
+17.2 Strategy: Money laundering – the dark side of cash . . . . . . . . . . 114
+17.3 Strategy: Liquidity management . . . . . . . . . . . . . . . . . . . . . 115
+17.4 Strategy: Repurchase agreement (REPO) . . . . . . . . . . . . . . . . 115
+17.5 Strategy: Pawnbroking . . . . . . . . . . . . . . . . . . . . . . . . . . 115
+17.6 Strategy: Loan sharking . . . . . . . . . . . . . . . . . . . . . . . . . 116
+18 Cryptocurrencies 116
+18.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 116
+18.2 Strategy: Artificial neural network (ANN) . . . . . . . . . . . . . . . 116
+18.3 Strategy: Sentiment analysis – na¨ıve Bayes Bernoulli . . . . . . . . . 120
+19 Global Macro 121
+19.1 Generalities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 121
+19.2 Strategy: Fundamental macro momentum . . . . . . . . . . . . . . . 122
+19.3 Strategy: Global macro inflation hedge . . . . . . . . . . . . . . . . . 122
+19.4 Strategy: Global fixed-income strategy . . . . . . . . . . . . . . . . . 123
+19.5 Strategy: Trading on economic announcements . . . . . . . . . . . . . 123
+20 Infrastructure 123
+Acknowledgments 124
+A R Source Code for Backtesting 125
+B DISCLAIMERS 132
+References 134
+Glossary 279
+Acronyms 336
+Some Math Notations 340
+Explanatory Comments for Index 341
+Index 342
+6
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Praises of 151 Trading Strategies
+“If you want to work as a trader or quant on Wall Street, you have to walk the
+walk and talk the talk. This unique book is a comprehensive introduction to a wide
+variety of tried and tested trading strategies. I highly recommend a 152nd trading
+strategy called buy this book!”
+–Peter Carr, Professor and Chair of Finance and Risk Engineering Department, NYU’s Tandon School of Engineering; and 2010 Financial Engineer of the
+Year, International Association for Quantitative Finance & Sungard
+“This book is an encyclopedic guided tour of “quant” investment strategies, from
+the simplest ones (like trend following) to much more exotic ones using sophisticated
+derivative contracts. No claim is made about the profitability of these strategies: one
+knows all too well how much implementation details and transaction costs matter.
+But no quant trader can afford ignoring what’s out there, as a source of inspiration
+or as a benchmark for new ideas.”
+–Jean-Philippe Bouchaud, Chairman and Chief Scientist, Capital Fund Management; Professor, Ecole Normale Sup´erieure; Member, French Academy of Sci- ´
+ences; and Co-Director, CFM-Imperial Institute of Quantitative Finance
+“Zura Kakushadze and Juan Andr´es Serur have created a masterful encyclopedia
+of quantitative trading strategies. The authors offer us a rigorous but accessible
+treatment of the mathematical foundations of these strategies. The coverage is
+comprehensive, starting with simple and well-known strategies such as covered call
+and then moving naturally to strategies involving cryptocurrencies. The supporting
+material such as a detailed glossary and an extensive list of references will make this
+book an essential reference for financial economists and investment professionals.”
+–Hossein Kazemi, Michael & Cheryl Philipp Endowed Professor of Finance,
+University of Massachusetts at Amherst; and Editor-in-Chief, The Journal of Alternative Investments
+“The successful trading of financial instruments is both a science and an art, just as
+the efforts of a chef reflect both gastronomic artistry and the underlying chemical
+and thermal processes of cooking. In 151 Trading Strategies financial traders are
+provided with a compendium of sound recipes, spanning the broad range of methods that can be applied to modern investment practice. The exposition of both the
+mathematics and intuition of each described trade is clear and concise. Readers will
+appreciate the inclusion of extensive computer code so as to reduce effort needed to
+implement any required calculations.”
+–Dan diBartolomeo, President, Northfield Information Services; and Editor,
+Journal of Asset Management
+“A real tour de force–151 Trading Strategies provides the most comprehensive un7
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+covering of popular hedge fund strategies. By revealing all the hedge funds’ secret
+sauce, Kakushadze and Serur have now rendered everything as beta-strategies. Time
+to lower ’em fees!”
+–Jim Kyung-Soo Liew, Assistant Professor of Finance, Carey Business School,
+Johns Hopkins University; Advisory Board Member, The Journal of Portfolio Management; and Co-Founder, SoKat
+“This book is an impressive concentration of strategies and formulas to expand
+knowledge in quantitative finance; it’s a must-read for anyone who wants to drastically improve his or her expertise in financial markets dynamics.”
+–Daniele Bernardi, CEO, DIAMAN Capital; and Chairman of the Board,
+INVESTORS’ Magazine Italia
+8
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Author Biographies
+Zura Kakushadze received his Ph.D. in theoretical physics from Cornell University, USA at 23, was a Postdoctoral Fellow at Harvard University, USA and an
+Assistant Professor at C.N. Yang Institute for Theoretical Physics at Stony Brook
+University, USA. He received an Alfred P. Sloan Foundation Fellowship in 2001.
+After expanding into quantitative finance, he was a Director at RBC Capital Markets, Managing Director at WorldQuant, Executive Vice President and substantial
+shareholder at Revere Data (now part of FactSet), and Adjunct Professor at the University of Connecticut, USA. Currently he is the President and CEO of Quantigicr
+Solutions and a Full Professor at Free University of Tbilisi, Georgia. He has over
+17 years of hands-on experience in quantitative trading and finance, 130+ publications in physics, finance, cancer research and other fields, 3,400+ citations and
+h-index 30+, 170,000+ downloads on SSRN, and over a quarter million followers on
+LinkedIn.
+Juan Andr´es Serur holds a Master’s Degree in Finance from the University of
+CEMA, Argentina. With more than 6 years of experience in trading in the stock
+market, he currently works as a quantitative analyst and strategist in an Argentine
+quantitative asset management firm and as a financial consultant for large corporations. In addition, he serves as the Academic Secretary of the Master of Finance
+Program at the University of CEMA, where he teaches undergraduate and postgraduate computational finance courses as an Assistant Professor. In 2016 he won the
+First Prize in an Argentine Capital Markets Simulation Challenge for Universities
+and Professional Institutions.
+9
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Preface (by Zura Kakushadze)
+The purpose of this “post-factum” Preface is to give some history, which sheds light
+on why we (the authors) have decided to make this book, which has been published
+in hardcover (and as an e-book),4
+into a freely downloadable PDF e-book on SSRN.
+In December of 2015 I posted the paper “101 Formulaic Alphas” on SSRN
+[Kakushadze, 2016], which provides explicit formulas (that are also computer source
+code) for 101 real-life formulaic quantitative trading alphas. That paper was a hit
+– in hindsight, perhaps unsurprisingly, considering how secretive quant trading is.
+So, at some point down the road, a light bulb went on in my head and I got this
+seemingly “crazy” idea to write a paper entitled “101 Trading Strategies”, except
+that this time these 101 strategies would be spread across all asset classes (as opposed
+to equities (StatArb) quant trading alphas as in “101 Formulaic Alphas”). I did not
+envision this as a book, just as a paper, maybe 100+ pages long, 1 page per strategy
+on average, plus overhead (introduction, references, etc.), something publishable in
+a journal (at least online). I also thought it would be both fun and efficient to get
+around 10-12 coauthors together, each would contribute about 10 strategies in one
+or two asset classes according to their fields of expertise, so the project would go
+faster. So, I pinged my contacts by email and posted several posts in the LinkedIn
+feed and groups saying that I was looking for collaborators for this project. I got a
+rather decent number of responses, some evidently were not serious, but some were.
+However, once I outlined in more detail what I had in mind for this project – I
+had a written plan – apparently people realized that this would not be a cakewalk,
+and most disappeared. As it turned out, the only person who was truly serious
+about this project was Juan Andr´es Serur, a young professor from Buenos Aires,
+Argentina, whom I had never even met in person. There were a lot of challenges
+along the way (including that Juan had never worked on a project of this magnitude
+and was learning on the job, so to speak). But at the end we got through it. Except
+that we did not have just 100+ pages with 101 strategies but over 350 pages with
+around 160-170 strategies (depending on how one counts). This was not publishable
+in any journal, by any stretch. This project basically had taken on a life of its own
+and turned into... a book. So, we discussed it and decided to publish it as such.
+Publishing a quant trading/finance book such as “151 Trading Strategies” is not
+a very rewarding business (at least financially), for several reasons. First, the target
+audience is rather limited because of the highly technical nature of the material.
+In my original exploratory call with them, the publisher mentioned that books like
+this sell around 1,000 copies total. This was consistent with what I was told by
+someone who is well-known in the field and had published 5 quant trading/finance
+books over the years, which had sold around 5,000 copies altogether. Second, if the
+book is published by a major publisher, the authors get dismal royalties, usually
+in the 8-12% range, which can go to around 20% if the book sells better than
+4 Z. Kakushadze and J.A. Serur. 151 Trading Strategies. Cham, Switzerland: Palgrave Macmillan, an imprint of Springer Nature, 1st Edition (2018), XX, 480 pp; ISBN 978-3-030-02791-9.
+10
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+expected. At $60-$70 for a hardcover, your book has to sell 100,000+ copies for
+you to make any decent money so it is a least somewhat commensurate with the
+time you spend on writing the book – this book took about 9 months to write,
+not including the time I spent on it before drafting started (conceiving it, looking
+for coauthors, etc.) or the time spent dealing with the publisher, advertising it,
+etc. Third, this particular publisher does not publish paperbacks as a matter of
+some policy I do not comprehend, and when the price is set around $60-$70 for
+a hardcover, the pool of potential buyers is dramatically reduced compared with
+a $20-$30 price point a paperback would have. Fourth, there are plenty of people
+working in quant trading/finance who can easily afford $60-$70, but many of these
+people – not to offend anyone – would rather download a pirated PDF copy from the
+internet... Fifth, the publisher’s business model appears to be immune to the fact
+that they cannot make much money from hardcover sales. Instead, their business
+model appears to hinge on e-book downloads through their existing (institutional)
+subscriptions: a subscriber, who pays a subscription fee, can freely download any
+book from the publisher’s portfolio. So, the success of a book is measured by e-book
+downloads by subscribers, not by hardcover sales, and the authors do not get paid
+per download, they only get paid a very symbolic (mildly put) flat fee irrespective
+of the number of such downloads. The bottom line is that there is no money to be
+made in this business for the authors. We were well-aware of this from the get-go.
+We did not publish this book for money – originally, it was going to be a paper.
+What is worse though is that, unlike in the olden days when editors would read
+every word of your manuscript and mark it up so it could be improved, etc., nowadays
+there appears to be little to no editorial support. We wrote the manuscript in LaTeX
+(as there are over 550 elevated equations in the book, not counting inline math), we
+created the index ourselves (which is a major pain and very time-consuming, if done
+right; in fact, it is probably the single worst part of writing a book), and proofread
+the manuscript several times to the point where upon the final proofreading right
+before printing we found only 5 minor typos attributable to our original manuscript.
+The bottom line is that we spent a lot of time perfecting our manuscript and it was
+very much print-ready. However, things got really messy on the publisher’s end.
+The nightmare started with the book cover. The publisher ask me if I had any
+concrete ideas for how I wanted the cover designed, and if I had a specific cover
+image in mind and to feel free to send along some images from Getty and Alamy
+(the image providers the publisher uses). I was taken aback. They keep almost
+all the profits and they ask me for the cover design? If we have to design our
+own cover, then we might as self-well publish and keep most royalties. I told them
+to design the cover professionally, as this was their responsibility. Their so-called
+“designs” they forwarded were highly unimpressive (just really super-minimalist –
+mildly put). So, I ended up designing the cover myself, including picking the cover
+image from the library of thousands of available images, placing the title and author
+names on the cover, etc. Their “design team” used my cover design and the only
+“substantial” change they made was changing the color of the title fonts to (in my
+11
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+humble opinion) suboptimal white – the publisher said they could not accommodate
+the color I suggested. So, imagine how appalled and taken aback I was when in the
+ready-to-publish final book version, on the copyright page, they put some name for
+the cover design credit, and did not even mention mine. They said the cover design
+“is theirs”, apparently referring to their “design team”. This was just factually false.
+But we did not wish to appear “difficult” or “unaccommodating”, so we let this go.
+However, the nightmare continued with author biographies on an inside flap of
+the dust jacket. They asked us to provide our headshots. We did. At least three
+times they produced the author biographies with one of the headshots sizably larger
+than the other, even though we provided identically sized headshots. Worse yet,
+they claimed that the headshots on the dust jacket were the same size when they
+clearly were not. So, again, not to appear “difficult” or “unaccommodating”, having
+wasted an inordinate amount of time on this, we let them leave our headshots out of
+the inside flap as their “design team” either could not or would not get them right.
+Little did we know that this was only the tip of the iceberg. When we finally
+(and belatedly) received the proofs from the publisher, we found over 100 typos
+introduced by the publisher’s typesetters in most incomprehensible ways. Worse yet,
+the one inadvertent grammar typo we did have in our original manuscript (along
+with four other, more subtle, non-grammar typos) was not fixed. It was painfully
+evident that they did not proofread the manuscript very carefully – them creating
+100+ unfathomable typos speaks volumes. So, we spent countless additional hours
+fixing their typos, and it took more than one round of revisions for them to get it
+right. In hindsight, this should come as no surprise: as many other publishers, they
+apparently outsource typesetting, copyediting, cover design, etc., to a developing
+country, and I highly doubt that, e.g., the English proficiency on the other end of
+this outsourcing process is top-notch. It is the all-familiar and prevalent sad story:
+English-language books are produced by people whose first language is not English.
+Finally, the book was online. However, the nightmare continued. There is an
+appendix in the book with computer source code and a lengthy discussion. This
+appendix was just another chapter in the book and was not supposed to be a part
+of the free preview of the book, which we expressly discussed and agreed on with
+the publisher in writing to be limited to the first two chapters. Yet, they included
+the appendix in the back matter of the book, which is freely downloadable from
+the publisher’s website along with the front matter. When I pointed this out to the
+publisher, their reply was that, for them to redo the files, it would delay the release of
+the book accordingly (and, based on prior history, that meant weeks, if not longer).
+This was already after multiple delays on the publisher’s end. So, once again, not to
+appear “difficult” or “unaccommodating”, we let this go and the appendix stayed
+in the freely-downloadable back matter. Speaking of which, while in our original
+manuscript all references were in one place, at the end, in the published version the
+references were cited at the end of each chapter. However, the publisher – for the
+reasons we do not comprehend – also kept the full list of references in the freelydownloadable back matter. While in the modular (where all chapters, front matter
+12
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+and back matter have separate PDF files) electronic e-book version this is not a big
+deal, they actually also included these duplicate references in the back matter in the
+printed version, which substantially (and artificially) increased its number of pages.
+But there is more. One would imagine that their production team would do some
+basic quality control post-production. Months later we found out that the Kindle
+version on Amazon was all messed up, with equations not displaying properly, etc.
+The publisher claimed that they provided correct files to Amazon and that the
+problem was on Amazon’s end. It took them several weeks to fix this issue, and
+the fix was a “hack”: they replaced the Kindle version with the so-called “replica”
+version, which is just a replica of the PDF. Anyone can easily create a “replica”
+version from a PDF using Kindle Create – this does not take a leading publisher.
+Furthermore, the Kindle preview version displays material substantially outside of
+the preview material we agreed on. But then again, who cares about the authors?
+Nor did the publisher seem to care much about the apparent pirated versions
+of the book PDF appearing on various websites. Basically, it was unclear what, if
+anything, the publisher was doing for the book. Their entire marketing effort was
+apparently limited to whopping two tweets they sent when the book was published.
+Essentially all the marketing efforts came from me promoting the book on LinkedIn
+(where I have over quarter million followers) by posting links to the preview version
+then-available on SSRN and the full version/hardcover on the publisher’s websites.
+Perhaps most unfathomably, not only did the publisher apparently did not do
+much to protect the book from pirated copies being available on the internet, or
+to promote the book, they outright refused to refute a factually false and defamatory “review” an anonymous purchaser placed on Amazon. E.g., that review falsely
+claims that “there is only a tiny paragraph (no more than 10 lines), very general,
+on each strategy and then close to 10 pages of book references after each strategy.”
+This is factually false: there are not “10 pages of book references after each strategy”. There are references after each chapter (not strategy or section) pursuant
+to the publisher’s own formatting (see above). The review also falsely claims that
+“A 10 line description of a very general strategy, no math, no backrest, no optimization.” Again, this is factually false: as the reader can readily see, the book
+has over 550 elevated equations (not counting lots of math embedded in the text),
+the source code for backtesting in Appendix A, strategies involving optimization,
+900+ glossary terms, acronyms and math definitions, etc. Furthermore, simpler
+strategies have concise (but precise) descriptions, while others span pages, not “10
+lines”, contrary to what the review falsely claims. The review also complains about
+the number of references in the book. The book description on Amazon (as well as
+the publisher’s websites) expressly states that there are around 2,000 bibliographic
+references in the book, one of whose aims is to serve as a reference guide into (and
+essentially an encyclopedia of) trading strategies (which is also stated in the Editorial Reviews of the book). Therefore, the anonymous reviewer was well aware of
+this before purchasing the book. The review further falsely claims: “And then, as
+if it were not enough, at the end of the book the author recaps all the references
+13
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+one more time.” The review is expressly attacking “the author” of the book, even
+though, as mentioned above, the specific formatting of the references (whereby the
+references pertinent to each chapter are included after each chapter, and all references are also included in the back matter, which is freely downloadable from the
+publisher’s website) was performed by the publisher, not by the authors. Our original manuscript has references only at the end. Again, as mentioned above, why the
+publisher duplicated the references both after the chapters and in the back matter
+is not something we understand, and it is not something we did or had control over,
+contrary to the anonymous reviewer’s factually false and defamatory statements.
+When we discovered the aforesaid factually false and defamatory review on Amazon, we contacted the publisher and asked them, at the minimum to put a comment
+on the review refuting its factually false statements, and also to contact Amazon to
+remove the review (as under Amazon’s policies, defamatory reviews are not allowed).
+To our bewilderment, the publisher suggested that we use our contacts to generate
+positive reviews on Amazon to counteract that negative review. Incredible, isn’t it?
+To be clear, having over a quarter million followers on LinkedIn and putting lots
+of content out there on social media, I have had my share of haters. And one thing
+I have learned is that there is some truth to the common expression “haters make
+us famous”. When you write a paper or a book or anything else you stick your neck
+out with, it comes with the territory: some will love it, some will hate it, and some
+will not care. I write things for the “some-will-love-it” demographic and I do not
+care about the rest. However, there is a big difference between someone expressing
+a negative opinion about what you have written – this is perfectly acceptable, we
+live in a free country with freedom of speech – and someone making factually false
+and defamatory statements, which is not acceptable. And when you write a book
+and grant the publisher all kinds of rights for the book, it falls onto the publisher to
+protect its integrity and reputation, as the publisher owns the rights to the book.
+There is a lesson to be learned from all this. That a large publisher will do
+little to nothing to protect the integrity and reputation of the book or its authors
+(especially if it involves a potential headache with Amazon) or to promote the book.
+So, as an author, you do all the hard work, and your publisher just takes over your
+sweat-and-blood creation, makes money from it, while you do all the work promoting
+the book, with little to no support from the publisher, including protecting the book
+from, e.g., being pirated on the internet, defamed, etc. Is this fair? Absolutely not!
+So, we have terminated the publishing agreement and are making our work free
+for everyone to download and benefit from the knowledge we have compiled in this
+now-free e-book. We hope you enjoy it and thanks for reading our book and our
+story, which hopefully will also be useful to other authors contemplating publishing
+a book. Consider this. Without real editorial support, when you have to design the
+book cover, deal with a large number of typos introduced by the typesetters, etc.,
+is publishing with a big-name publisher all that different from “vanity publishing”?
+Finally, I will let you read the book. Innovate. Disrupt. Spread the knowledge.
+14
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+1 Introduction and Summary
+A trading strategy can be defined as a set of instructions to achieve certain asset
+holdings by some predefined times t1, t2, . . . , which holdings can (but need not) be
+null at one or more of these times. In many cases, the main objective of a trading
+strategy is to make a profit, i.e., to generate a positive return on its investment.
+However, some viable trading strategies are not always outright profitable as standalone strategies. E.g., a hedging strategy can be a part of a bigger plan, which itself
+can but need not be a trading strategy. Thus, an airline hedging against rising fuel
+costs with commodity futures is a trading strategy, which is a risk-management step
+in executing the airline’s business strategy of generating profits through its services.
+In the case of trading strategies that are intended to be outright profitable as
+stand-alone strategies, one may argue that the phrase “buy low, sell high” captures
+their essence. However this viewpoint is somewhat superfluous and, while it applies
+to trading strategies that buy and sell a single asset (e.g., a single stock), it would
+exclude a whole host of viable strategies that do not work quite like that. E.g., a
+trading strategy that uses a hedging sub-strategy for risk management may not always “buy low, sell high” when it comes to a particular asset in its portfolio. This is
+because hedging risk – or, essentially, transferring some risk to other market participants – is not free, and often a trader will pay a premium for hedging some risks in
+a trading strategy to achieve its objectives. Another example would be the so-called
+statistical arbitrage, wherein the trading portfolio can consist of, e.g., thousands of
+stocks and profitability is typically not achieved by buying low and selling high each
+stock or even any discernable groups of stocks, but statistically, across all stocks,
+with some trades making money and some losing it. It gets complicated quickly.
+The purpose of these notes is to collect a variety of trading strategies in the
+context of finance (as opposed to trading baseball cards, classic cars, etc.) across
+essentially all (or at least most frequently encountered) asset classes. Here we deliberately use the term “asset class” somewhat loosely and include what can be referred
+to as “asset sub-classes”. Thus, a narrower definition would include stocks, bonds,
+cash, currencies, real estate, commodities and infrastructure. However, this definition would be too narrow for our purposes here. We also consider: derivatives such
+as options and futures; exchange-traded funds (ETFs); indexes (which are usually
+traded through vehicles such as ETFs and futures); volatility, which can be treated
+as an asset class (and traded via, among other things, exchange-traded notes); structured assets (such as collateralized debt obligations and mortgage-backed securities);
+convertible bonds (which represent a hybrid between bonds and stocks); distressed
+assets (which are not a separate asset class per se, but the corresponding trading
+strategies are rather distinct); cryptocurrencies; miscellaneous assets such as weather
+and energy (derivatives); and also trading strategies such as tax arbitrage and global
+macro (which use some assets mentioned above as tradables). Some strategies are
+relatively simple and can be described in words, while many (in fact, most) require
+a much more detailed mathematical description, which we provide formulaically.
+15
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+It is important to bear in mind that, unlike the laws of nature (physics), which
+(apparently) are set in stone and do not change in time, financial markets are manmade and change essentially continuously, and at times quite dramatically. One of
+the consequences of this transiency is that trading strategies that may have worked
+well for some time, may die, sometimes quite abruptly. E.g., when the New York
+Stock Exchange (NYSE) started switching away from its human-operated “specialist” system to electronic trading beginning late 2006,5 many statistical arbitrage
+strategies that were profitable for years prior to that, pretty much died overnight
+as volatility increased and what used to do the trick before no longer did. Eventually the market was flooded with high frequency trading (HFT)6
+strategies further
+diminishing profit margins of many “good old” trading strategies and killing them.
+However, technological advances gave rise to new types of trading, including
+ubiquitous trading strategies based on data mining and machine learning, which
+seek to identify – typically quite ephemeral – signals or trends by analyzing large
+volumes of diverse types of data. Many of these trading signals are so faint that
+they cannot be traded on their own, so one combines thousands, in fact, tens or
+even hundreds of thousands if not millions of such signals with nontrivial weights
+to amplify and enhance the overall signal such that it becomes tradable on its own
+and profitable after trading costs and slippage, including that inflicted by HFT.7
+Considering the intrinsically ephemeral nature of the financial markets and trading strategies designed to make a profit therefrom, the purpose of these notes is not
+to convey to the reader how to make money using any trading strategy but simply to
+provide information on and give some flavor of what kind of trading strategies people have considered across a broad cross-section of asset classes and trading styles.
+In light of the foregoing, we make the following DISCLAIMER: Any information or
+opinions provided herein are for informational purposes only and are not intended,
+and shall not be construed, as an investment, legal, tax or any other such advice,
+or an offer, solicitation, recommendation or endorsement of any trading strategy,
+security, product or service. For further legal disclaimers, see Appendix B hereof.
+We hope these notes will be useful to academics, practitioners, students and
+aspiring researchers/traders for years to come. These notes intentionally – not to
+duplicate prior literature and to avoid this manuscript spanning thousands of pages –
+do not contain any numeric simulations, backtests, empirical studies, etc. However,
+we do provide an eclectic cornucopia of references, including those with detailed
+empirical analyses. Our purpose here is to describe, in many cases in sizable detail,
+various trading strategies. Also, Appendix A provides source code for illustrating
+out-of-sample backtesting (see Appendix B for legalese).8 So, we hope you enjoy!
+5 NYSE first started with its “Hybrid Market” (see, e.g., [Hendershott and Moulton, 2011]).
+However, the writing had been on the wall for the ultimate demise of the specialist system for
+quite some time. For a timeline, see, e.g., [Pisani, 2010].
+6 See, e.g., [Aldridge, 2013], [Lewis, 2014].
+7 See, e.g., [Kakushadze and Tulchinsky, 2016], [Kakushadze and Yu, 2017b].
+8 The code in Appendix A is not written to be “fancy” or optimized for speed or otherwise.
+16
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2 Options
+2.1 Generalities
+An option is a form of a financial derivative. It is a contract sold by the option writer
+to the option holder. Typically, an option gives the option holder the right, but not
+the obligation, to buy or sell an underlying security or financial asset (e.g., a share
+of common stock) at an agreed-upon price (referred to as the strike price) during a
+certain period of time or on a specific date (referred to as the exercise date). A buyer
+pays a premium to the seller for the option. For option pricing, see, e.g., [Harrison
+and Pliska, 1981], [Baxter and Rennie, 1996], [Hull, 2012], [Kakushadze, 2015a].
+A European call option is a right (but not an obligation) to buy a stock at the
+maturity time T for the strike price k agreed on at time t = 0. The claim for the call
+option f
+call(ST , k) = (ST − k)
++. Here (x)
++ = x if x > 0, and (x)
++ = 0 if x ≤ 0. By
+the “claim” we mean how much the option is worth at maturity T. If the stock price
+at maturity ST > k, then the option holder gains ST −k (excluding the cost paid for
+the option at t = 0). If the price at maturity ST ≤ k, then there is no profit to be
+made from the option as it makes no sense to exercise it if ST < k (as it is cheaper
+to buy the stock in the market) and it makes no difference if ST = k – all this is
+assuming no transaction costs. Similarly, a European put option is a right (but not
+an obligation) to sell a stock at the maturity time T for the strike price k agreed on
+at time t = 0. The claim for the put option is given by f
+put(ST , k) = (k − ST )
++.
+Options can be issued on a variety of underlying assets, e.g., equities (singlestock options), bonds, futures, indexes, commodities, currencies, etc. For the sake of
+terminological convenience and definiteness, in the following we will frequently refer
+to the underlying asset as “stock”, even though in many cases the discussion can be
+readily generalized to other assets. Furthermore, there is a variety of option styles
+(beyond European options – for European options, see, e.g., [Black and Scholes,
+1973]), e.g., American options (that can be exercised on any trading day on or
+before expiration – see, e.g., [Kim, 1990]), Bermudan options (that can be exercised
+only on specified dates on or before expiration – see, e.g., [Andersen, 1999]), Canary
+options (that can be exercised, say, quarterly, but not before a determined time
+period, say, 1 year, has elapsed – see, e.g., [Henrard, 2006]), Asian options (whose
+payoff is determined by the average underlying price over some preset time period
+– see, e.g., [Rogers and Shi, 1995]), barrier options (which can be exercised only if
+the underlying security’s price passes a certain level or “barrier” – see, e.g., [Haug,
+2001]), other exotic options (a broad category of options that typically are complexly
+structured – see, e.g., [Fabozzi, 2002]), etc. Let us also mention binary (a.k.a. allor-nothing or digital) options (that pay a preset amount, say, $1, if the underlying
+security meets a predefined condition on expiration, otherwise they simply expire
+without paying anything to the holder – see, e.g., [Breeden and Litzenberger, 1978]).
+Some trading strategies can be built using, e.g., combinations of options. Such
+trading strategies can be divided into two groups: directional and non-directional.
+17
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Directional strategies imply an expectation on the direction of the future stock price
+movements. Non-directional (a.k.a. neutral) strategies are not based on the future
+direction: the trader is oblivious to whether the stock price goes up or down.
+Directional strategies can be divided into two subgroups: (i) bullish strategies,
+where the trader profits if the stock price goes up; and (ii) bearish strategies, where
+the trader profits if the stock price goes down. Non-directional strategies can be
+divided into two subgroups: (a) volatility strategies that profit if the stock has large
+price movements (high volatility environment); and (b) sideways strategies that
+profit if the stock price remains stable (low volatility environment). Also, one can
+distinguish income, capital gain, hedging strategies, etc. (see, e.g., [Cohen, 2005]).
+In the remainder of this section, unless stated otherwise, all options are for the
+same stock and have the same time-to-maturity (TTM). The moneyness abbreviations are: ATM = at-the-money, ITM = in-the-money, OTM = out-of-the-money.
+Also: fT is the payoff at maturity T; S0 is the stock price at the time t = 0 of
+entering the trade (i.e., establishing the initial position); ST is the stock price at
+maturity; C is the net credit received at t = 0, and D is the net debit required at
+t = 0, as applicable; H = D (for a net debit trade) or H = −C (for a net credit
+trade);9 S∗up and S∗down are the higher and lower break-even (i.e., for which fT = 0)
+stock prices at maturity; if there is only one break-even price, it is denoted by S∗;
+Pmax is the maximum profit at maturity; Lmax is the maximum loss at maturity.
+2.2 Strategy: Covered call
+This strategy (a.k.a. “buy-write” strategy) amounts to buying stock and writing a
+call option with a strike price K against the stock position. The trader’s outlook on
+the stock price is neutral to bullish. The covered call strategy has the same payoff as
+writing a put option (short/naked put).10 While maintaining the long stock position,
+the trader can generate income by periodically selling OTM call options. We have:11
+fT = ST − S0 − (ST − K)
++ + C = K − S0 − (K − ST )
++ + C (1)
+S∗ = S0 − C (2)
+Pmax = K − S0 + C (3)
+Lmax = S0 − C (4)
+2.3 Strategy: Covered put
+This strategy (a.k.a. “sell-write” strategy) amounts to shorting stock and writing a
+put option with a strike price K against the stock position. The trader’s outlook is
+9 H is the net debit for all bought option premia less the net credit for all sold option premia.
+10 This is related to put-call parity (see, e.g., [Stoll, 1969], [Hull, 2012]).
+11 For some literature on covered call strategies, see, e.g., [Pounds, 1978], [Whaley, 2002], [Feldman and Roy, 2004], [Hill et al, 2006], [Kapadia and Szado, 2007], [Che and Fung, 2011], [Mugwagwa
+et al, 2012], [Israelov and Nielsen, 2014], [Israelov and Nielsen, 2015a], [Hemler and Miller, 2015].
+18
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+neutral to bearish. The covered put strategy has the same payoff as writing a call
+option (short/naked call). While maintaining the short stock position, the trader
+can generate income by periodically selling OTM put options. We have:12
+fT = S0 − ST − (K − ST )
++ + C = S0 − K − (ST − K)
++ + C (5)
+S∗ = S0 + C (6)
+Pmax = S0 − K + C (7)
+Lmax = unlimited (8)
+2.4 Strategy: Protective put
+This strategy (a.k.a. “married put” or “synthetic call”) amounts to buying stock
+and an ATM or OTM put option with a strike price K ≤ S0. The trader’s outlook
+is bullish. This is a hedging strategy: the put option hedges the risk of the stock
+price falling. We have:13
+fT = ST − S0 + (K − ST )
++ − D = K − S0 + (ST − K)
++ − D (9)
+S∗ = S0 + D (10)
+Pmax = unlimited (11)
+Lmax = S0 − K + D (12)
+2.5 Strategy: Protective call
+This strategy (a.k.a. “married call” or “synthetic put”) amounts to shorting stock
+and buying an ATM or OTM call option with a strike price K ≥ S0. The trader’s
+outlook is bearish. This is a hedging strategy: the call option hedges the risk of the
+stock price rising. We have:14
+fT = S0 − ST + (ST − K)
++ − D = S0 − K + (K − ST )
++ − D (13)
+S∗ = S0 − D (14)
+Pmax = S0 − D (15)
+Lmax = K − S0 + D (16)
+2.6 Strategy: Bull call spread
+This is a vertical spread consisting of a long position in a close to ATM call option
+with a strike price K1, and a short position in an OTM call option with a higher
+12 The covered put option strategy is symmetrical to the covered call option strategy. Academic
+literature on the covered put option strategy appears to be scarce. See, e.g., [Che, 2016].
+13 For some literature on protective put strategies, see, e.g., [Figlewski, Chidambaran and Kaplan, 1993], [Israelov and Nielsen, 2015b], [Israelov, Nielsen and Villalon, 2017], [Israelov, 2017].
+14 The protective call option strategy is symmetrical to the protective put option strategy.
+Academic literature on the protective call option strategy appears to be scarce. See, e.g., [Jabbour
+and Budwick, 2010], [Tokic, 2013].
+19
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+strike price K2. This is a net debit trade. The trader’s outlook is bullish: the
+strategy profits if the stock price rises. This is a capital gain strategy. We have:15
+fT = (ST − K1)
++ − (ST − K2)
++ − D (17)
+S∗ = K1 + D (18)
+Pmax = K2 − K1 − D (19)
+Lmax = D (20)
+2.7 Strategy: Bull put spread
+This is a vertical spread consisting of a long position in an OTM put option with
+a strike price K1, and a short position in another OTM put option with a higher
+strike price K2. This is a net credit trade. The trader’s outlook is bullish. This is
+an income strategy. We have:
+fT = (K1 − ST )
++ − (K2 − ST )
++ + C (21)
+S∗ = K2 − C (22)
+Pmax = C (23)
+Lmax = K2 − K1 − C (24)
+2.8 Strategy: Bear call spread
+This is a vertical spread consisting of a long position in an OTM call option with a
+strike price K1, and a short position in another OTM call option with a lower strike
+price K2. This is a net credit trade. The trader’s outlook is bearish. This is an
+income strategy. We have:
+fT = (ST − K1)
++ − (ST − K2)
++ + C (25)
+S∗ = K2 + C (26)
+Pmax = C (27)
+Lmax = K1 − K2 − C (28)
+2.9 Strategy: Bear put spread
+This is a vertical spread consisting of a long position in a close to ATM put option
+with a strike price K1, and a short position in an OTM put option with a lower
+15 For some literature on bull/bear call/put vertical spreads, see, e.g., [Cartea and Pedraz,
+2012], [Chaput and Ederington, 2003], [Chaput and Ederington, 2005], [Chen, Chen and Howell,
+1999], [Cong, Tan and Weng, 2013], [Cong, Tan and Weng, 2014], [Matsypura and Timkovsky,
+2010], [Shah, 2017], [Wong, Thompson and Teh, 2011], [Zhang, 2015]. Also see [Clarke, de Silva
+and Thorley, 2013], [Cohen, 2005], [Jabbour and Budwick, 2010], [McMillan, 2002], [The Options
+Institute, 1995].
+20
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+strike price K2. This is a net debit trade. The trader’s outlook is bearish: this
+strategy profits if the stock price falls. This is a capital gain strategy. We have:
+fT = (K1 − ST )
++ − (K2 − ST )
++ − D (29)
+S∗ = K1 − D (30)
+Pmax = K1 − K2 − D (31)
+Lmax = D (32)
+2.10 Strategy: Long synthetic forward
+This strategy amounts to buying an ATM call option and selling an ATM put option
+with a strike price K = S0. This can be a net debit or net credit trade. Typically,
+|H|  S0. The trader’s outlook is bullish: this strategy mimics a long stock or
+futures position; it replicates a long forward contract with the delivery price K and
+the same maturity as the options. This is a capital gain strategy. We have:16
+fT = (ST − K)
++ − (K − ST )
++ − H = ST − K − H (33)
+S∗ = K + H (34)
+Pmax = unlimited (35)
+Lmax = K + H (36)
+2.11 Strategy: Short synthetic forward
+This strategy amounts to buying an ATM put option and selling an ATM call option
+with a strike price K = S0. This can be a net debit or net credit trade. Typically,
+|H|  S0. The trader’s outlook is bearish: this strategy mimics a short stock or
+futures position; it replicates a short forward contract with the delivery price K and
+the same maturity as the options. This is a capital gain strategy. We have:
+fT = (K − ST )
++ − (ST − K)
++ − H = K − ST − H (37)
+S∗ = K − H (38)
+Pmax = K − H (39)
+Lmax = unlimited (40)
+2.12 Strategy: Long combo
+This strategy (a.k.a. “long risk reversal”) amounts to buying an OTM call option
+with a strike price K1 and selling an OTM put option with a strike price K2. The
+16 For some literature on long/short synthetic forward contracts (a.k.a. synthetic futures), see,
+e.g., [Benavides, 2009], [Bozic and Fortenbery, 2012], [DeMaskey, 1995], [Ebrahim and Rahman,
+2005], [Nandy and Chattopadhyay, 2016].
+21
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+trader’s outlook is bullish. This is a capital gain strategy.17 We have (K1 > K2):
+fT = (ST − K1)
++ − (K2 − ST )
++ − H (41)
+S∗ = K1 + H, H > 0 (42)
+S∗ = K2 + H, H < 0 (43)
+K2 ≤ S∗ ≤ K1, H = 0 (44)
+Pmax = unlimited (45)
+Lmax = K2 + H (46)
+2.13 Strategy: Short combo
+This strategy (a.k.a. “short risk reversal”) amounts to buying an OTM put option
+with a strike price K1 and selling an OTM call option with a strike price K2. The
+trader’s outlook is bearish. This is a capital gain strategy. We have (K2 > K1):
+fT = (K1 − ST )
++ − (ST − K2)
++ − H (47)
+S∗ = K1 − H, H > 0 (48)
+S∗ = K2 − H, H < 0 (49)
+K1 ≤ S∗ ≤ K2, H = 0 (50)
+Pmax = K1 − H (51)
+Lmax = unlimited (52)
+2.14 Strategy: Bull call ladder
+This is a vertical spread consisting of a long position in (usually) a close to ATM
+call option with a strike price K1, a short position in an OTM call option with
+a strike price K2, and a short position in another OTM call option with a higher
+strike price K3. A bull call ladder is a bull call spread financed by selling another
+OTM call option (with the strike price K3).18 This adjusts the trader’s outlook from
+bullish (bull call spread) to conservatively bullish or even non-directional (with an
+expectation of low volatility). We have:
+fT = (ST − K1)
++ − (ST − K2)
++ − (ST − K3)
++ − H (53)
+S∗down = K1 + H, H > 0 (54)
+S∗up = K3 + K2 − K1 − H (55)
+Pmax = K2 − K1 − H (56)
+Lmax = unlimited (57)
+17 For some literature on long/short combo strategies, see, e.g., [Rusn´akov´a, Solt´es and Szabo, ˇ
+2015], [Solt´es, 2011], [ ˇ Solt´es and Rusn´akov´a, 2012]. Also see, e.g., [Chaput and Ederington, 2003]. ˇ
+18 In this sense, this is an “income” strategy.
+22
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.15 Strategy: Bull put ladder
+This is a vertical spread consisting of a short position in (usually) a close to ATM
+put option with a strike price K1, a long position in an OTM put option with a strike
+price K2, and a long position in another OTM put option with a lower strike price
+K3. A bull put ladder typically arises when a bull put spread (a bullish strategy)
+goes wrong (the stock trades lower), so the trader buys another OTM put option
+(with the strike price K3) to adjust the position to bearish. We have:19
+fT = (K3 − ST )
++ + (K2 − ST )
++ − (K1 − ST )
++ − H (58)
+S∗up = K1 + H, H < 0 (59)
+S∗down = K3 + K2 − K1 − H (60)
+Pmax = K3 + K2 − K1 − H (61)
+Lmax = K1 − K2 + H (62)
+2.16 Strategy: Bear call ladder
+This is a vertical spread consisting of a short position in (usually) a close to ATM
+call option with a strike price K1, a long position in an OTM call option with a strike
+price K2, and a long position in another OTM call option with a higher strike price
+K3. A bear call ladder typically arises when a bear call spread (a bearish strategy)
+goes wrong (the stock trades higher), so the trader buys another OTM call option
+(with the strike price K3) to adjust the position to bullish. We have:
+fT = (ST − K3)
++ + (ST − K2)
++ − (ST − K1)
++ − H (63)
+S∗down = K1 − H, H < 0 (64)
+S∗up = K3 + K2 − K1 + H (65)
+Pmax = unlimited (66)
+Lmax = K2 − K1 + H (67)
+2.17 Strategy: Bear put ladder
+This is a vertical spread consisting of a long position in (usually) a close to ATM
+put option with a strike price K1, a short position in an OTM put option with
+a strike price K2, and a short position in another OTM put option with a lower
+strike price K3. A bear put ladder is a bear put spread financed by selling another
+OTM put option (with the strike price K3).20 This adjusts the trader’s outlook from
+bearish (bear put spread) to conservatively bearish or even non-directional (with an
+19 For some literature on ladder strategies, see, e.g., [Amaitiek, B´alint and Reˇsovsk´y, 2010],
+[Harˇcarikov´a and Solt´es, 2016], [He, Tang and Zhang, 2016], [ ˇ Solt´es and Amaitiek, 2010a]. ˇ
+20 In this sense, as for the bull call ladder, this is an “income” strategy.
+23
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+expectation of low volatility). We have (assuming K3 + K2 − K1 + H > max(H, 0)):
+fT = (K1 − ST )
++ − (K2 − ST )
++ − (K3 − ST )
++ − H (68)
+S∗up = K1 − H, H > 0 (69)
+S∗down = K3 + K2 − K1 + H (70)
+Pmax = K1 − K2 − H (71)
+Lmax = K3 + K2 − K1 + H (72)
+2.18 Strategy: Calendar call spread
+This is a horizontal spread consisting of a long position in a close to ATM call option
+with TTM T
+0 and a short position in another call option with the same strike price
+K but shorter TTM T < T0
+. This is a net debit trade. The trader’s outlook is
+neutral to bullish. At the expiration of the short call option (t = T), the best case
+scenario is if the stock price is right at the strike price (ST = K). At t = T let V be
+the value of the long call option (expiring at t = T
+0
+) assuming ST = K. We have:21
+Pmax = V − D (73)
+Lmax = D (74)
+If at the expiration of the short call option the stock price Sstop−loss ≤ ST ≤ K,
+where Sstop−loss is the stop-loss price below which the trader would unwind the
+entire position, then the trader can write another call option with the strike price
+K and TTM T1 < T0
+. While maintaining the long position in the call option with
+TTM T
+0
+, the trader can generate income by periodically selling call options with
+shorter maturities. In this regard, this strategy resembles the covered call strategy.
+2.19 Strategy: Calendar put spread
+This is a horizontal spread consisting of a long position in a close to ATM put option
+with TTM T
+0 and a short position in another put option with the same strike price
+K but shorter TTM T < T0
+. This is a net debit trade. The trader’s outlook is
+neutral to bearish. At the expiration of the short put option (t = T), the best case
+scenario is if the stock price is right at the strike price (ST = K). At t = T let V be
+the value of the long put option (expiring at t = T
+0
+) assuming ST = K. We have:
+Pmax = V − D (75)
+Lmax = D (76)
+If at the expiration of the short put option the stock price K ≤ ST ≤ Sstop−loss,
+where Sstop−loss is the stop-loss price above which the trader would unwind the
+21 For some literature on calendar/diagonal call/put spreads, see, e.g., [Carmona and Durrleman,
+2003], [Carr and Javaheri, 2005], [Dale and Currie, 2015], [Gatheral and Jacquier, 2014], [Kawaller,
+Koch and Ludan, 2002], [Liu and Tang, 2010], [Manoliu, 2004], [Pirrong, 2017], [Till, 2008].
+24
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+entire position, then the trader can write another put option with the strike price
+K and TTM T1 < T0
+. While maintaining the long position in the put option with
+TTM T
+0
+, the trader can generate income by periodically selling put options with
+shorter maturities. In this regard, this strategy resembles the covered put strategy.
+2.20 Strategy: Diagonal call spread
+This is a diagonal spread consisting of a long position in a deep ITM call option with
+a strike price K1 and TTM T
+0
+, and a short position in an OTM call option with a
+strike price K2 and shorter TTM T < T0
+. This is a net debit trade. The trader’s
+outlook is bullish. At t = T let V be the value of the long call option (expiring at
+t = T
+0
+) assuming ST = K. We have:
+Pmax = V − D (77)
+Lmax = D (78)
+If at the expiration of the short call option the stock price Sstop−loss ≤ ST ≤ K2,
+where Sstop−loss is the stop-loss price below which the trader would unwind the entire
+position, then the trader can write another OTM call option with TTM T1 < T0
+.
+While maintaining the long position in the call option with TTM T
+0
+, the trader can
+generate income by periodically selling OTM call options with shorter maturities. In
+this regard, this strategy is similar to the calendar call spread. The main difference
+is that, in the diagonal call spread the deep ITM call option (unlike the close to
+ATM call option in the calendar call spread) more closely mimics the underlying
+stock, so the position is more protected against a sharp rise in the stock price.
+2.21 Strategy: Diagonal put spread
+This is a diagonal spread consisting of a long position in a deep ITM put option with
+a strike price K1 and TTM T
+0
+, and a short position in an OTM put option with a
+strike price K2 and shorter TTM T < T0
+. This is a net debit trade. The trader’s
+outlook is bearish. At t = T let V be the value of the long put option (expiring at
+t = T
+0
+) assuming ST = K. We have:
+Pmax = V − D (79)
+Lmax = D (80)
+If at the expiration of the short put option the stock price K2 ≤ ST ≤ Sstop−loss,
+where Sstop−loss is the stop-loss price above which the trader would unwind the entire
+position, then the trader can write another OTM put option with TTM T1 < T0
+.
+While maintaining the long position in the put option with TTM T
+0
+, the trader can
+generate income by periodically selling OTM put options with shorter maturities. In
+this regard, this strategy is similar to the calendar put spread. The main difference
+is that, in the diagonal put spread the deep ITM put option (unlike the close to
+25
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+ATM put option in the calendar put spread) more closely mimics the underlying
+stock, so the position is more protected against a sharp drop in the stock price.
+2.22 Strategy: Long straddle
+This is a volatility strategy consisting of a long position in an ATM call option, and
+a long position in an ATM put option with a strike price K. This is a net debit
+trade. The trader’s outlook is neutral. This is a capital gain strategy. We have22:
+fT = (ST − K)
++ + (K − ST )
++ − D (81)
+S∗up = K + D (82)
+S∗down = K − D (83)
+Pmax = unlimited (84)
+Lmax = D (85)
+2.23 Strategy: Long strangle
+This is a volatility strategy consisting of a long position in an OTM call option with
+a strike price K1, and a long position in an OTM put option with a strike price K2.
+This is a net debit trade. However, because both call and put options are OTM,
+this strategy is less costly to establish than a long straddle position. The flipside
+is that the movement in the stock price required to reach one of the break-even
+points is also more significant. The trader’s outlook is neutral. This is a capital
+gain strategy. We have:
+fT = (ST − K1)
++ + (K2 − ST )
++ − D (86)
+S∗up = K1 + D (87)
+S∗down = K2 − D (88)
+Pmax = unlimited (89)
+Lmax = D (90)
+2.24 Strategy: Long guts
+This is a volatility strategy consisting of a long position in an ITM call option with
+a strike price K1, and a long position in an ITM put option with a strike price K2.
+This is a net debit trade. Since both call and put options are ITM, this strategy
+22 For some literature on straddle/strangle strategies, see, e.g., [Copeland and Galai, 1983],
+[Coval and Shumway, 2001], [Engle and Rosenberg, 2000], [Gao, Xing and Zhang, 2017], [Goltz
+and Lai, 2009], [Guo, 2000], [Hansch, Naik and Viswanathan, 1998], [Noh, Engle and Kane, 1994],
+[Rusn´akov´a and Solt´es, 2012], [Suresh, 2015]. Academic literature specifically on long/short guts ˇ
+strategies (which can be thought of as variations on straddles) appears to be more scarce. For a
+book reference, see, e.g., [Cohen, 2005]. For covered straddles, see, e.g., [Johnson, 1979].
+26
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+is more costly to establish than a long straddle position. The trader’s outlook is
+neutral. This is a capital gain strategy. We have (assuming D > K2 − K1):23
+fT = (ST − K1)
++ + (K2 − ST )
++ − D (91)
+S∗up = K1 + D (92)
+S∗down = K2 − D (93)
+Pmax = unlimited (94)
+Lmax = D − (K2 − K1) (95)
+2.25 Strategy: Short straddle
+This a is sideways strategy consisting of a short position in an ATM call option, and
+a short position in an ATM put option with a strike price K. This is a net credit
+trade. The trader’s outlook is neutral. This is an income strategy. We have:
+fT = −(ST − K)
++ − (K − ST )
++ + C (96)
+S∗up = K + C (97)
+S∗down = K − C (98)
+Pmax = C (99)
+Lmax = unlimited (100)
+2.26 Strategy: Short strangle
+This is a sideways strategy consisting of a short position in an OTM call option with
+a strike price K1, and a short position in an OTM put option with a strike price K2.
+This is a net credit trade. Since both call and put options are OTM, this strategy
+is less risky than a short straddle position. The flipside is that the initial credit is
+also lower. The trader’s outlook is neutral. This is an income strategy. We have:
+fT = −(ST − K1)
++ − (K2 − ST )
++ + C (101)
+S∗up = K1 + C (102)
+S∗down = K2 − C (103)
+Pmax = C (104)
+Lmax = unlimited (105)
+2.27 Strategy: Short guts
+This is a sideways strategy consisting of a short position in an ITM call option with
+a strike price K1, and a short position in an ITM put option with a strike price
+K2. This is a net credit trade. Since both call and put options are ITM, the initial
+23 Otherwise this strategy would generate risk-free profits.
+27
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+credit is higher than in a short straddle position. The flipside is that the risk is also
+higher. The trader’s outlook is neutral. This is an income strategy. We have:24
+fT = −(ST − K1)
++ − (K2 − ST )
++ + C (106)
+S∗up = K1 + C (107)
+S∗down = K2 − C (108)
+Pmax = C − (K2 − K1) (109)
+Lmax = unlimited (110)
+2.28 Strategy: Long call synthetic straddle
+This volatility strategy (which is the same as a long straddle with the put replaced
+by a synthetic put) amounts to shorting stock and buying two ATM (or the nearest
+ITM) call options with a strike price K. The trader’s outlook is neutral. This is a
+capital gain strategy.25 We have (assuming S0 ≥ K and D > S0 − K):
+fT = S0 − ST + 2 × (ST − K)
++ − D (111)
+S∗up = 2 × K − S0 + D (112)
+S∗down = S0 − D (113)
+Pmax = unlimited (114)
+Lmax = D − (S0 − K) (115)
+2.29 Strategy: Long put synthetic straddle
+This volatility strategy (which is the same as a long straddle with the call replaced
+by a synthetic call) amounts to buying stock and buying two ATM (or the nearest
+ITM) put options with a strike price K. The trader’s outlook is neutral. This is a
+capital gain strategy. We have (assuming S0 ≤ K and D > K − S0):
+fT = ST − S0 + 2 × (K − ST )
++ − D (116)
+S∗up = S0 + D (117)
+S∗down = 2 × K − S0 − D (118)
+Pmax = unlimited (119)
+Lmax = D − (K − S0) (120)
+2.30 Strategy: Short call synthetic straddle
+This sideways strategy (which is the same as a short straddle with the put replaced
+by a synthetic put) amounts to buying stock and selling two ATM (or the nearest
+24 Similarly to long guts, here we assume that C > K2 − K1.
+25 Academic literature on synthetic straddles appears to be scarce. See, e.g., [Trifonov et al,
+2011], [Trifonov et al, 2014].
+28
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+OTM) call options with a strike price K. The trader’s outlook is neutral. This is a
+capital gain strategy. We have (assuming S0 ≤ K):
+fT = ST − S0 − 2 × (ST − K)
++ + C (121)
+S∗up = 2 × K − S0 + C (122)
+S∗down = S0 − C (123)
+Pmax = K − S0 + C (124)
+Lmax = unlimited (125)
+2.31 Strategy: Short put synthetic straddle
+This sideways strategy (which is the same as a short straddle with the call replaced
+by a synthetic call) amounts to shorting stock and selling two ATM (or the nearest
+OTM) put options with a strike price K. The trader’s outlook is neutral. This is a
+capital gain strategy. We have (assuming S0 ≥ K):
+fT = S0 − ST − 2 × (K − ST )
++ + C (126)
+S∗up = S0 + C (127)
+S∗down = 2 × K − S0 − C (128)
+Pmax = S0 − K + C (129)
+Lmax = unlimited (130)
+2.32 Strategy: Covered short straddle
+This strategy amounts to augmenting a covered call by writing a put option with
+the same strike price K and TTM as the sold call option and thereby increasing the
+income. The trader’s outlook is bullish. We have:
+fT = ST − S0 − (ST − K)
++ − (K − ST )
++ + C (131)
+S∗ =
+1
+2
+(S0 + K − C) (132)
+Pmax = K − S0 + C (133)
+Lmax = S0 + K − C (134)
+2.33 Strategy: Covered short strangle
+This strategy amounts to augmenting a covered call by writing an OTM put option
+with a strike price K0 and the same TTM as the sold call option (whose strike price
+is K) and thereby increasing the income. The trader’s outlook is bullish. We have:
+fT = ST − S0 − (ST − K)
++ − (K0 − ST )
++ + C (135)
+Pmax = K − S0 + C (136)
+Lmax = S0 + K0 − C (137)
+29
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.34 Strategy: Strap
+This is a volatility strategy consisting of a long position in two ATM call options,
+and a long position in an ATM put option with a strike price K. This is a net debit
+trade. The trader’s outlook is bullish. This is a capital gain strategy. We have:26
+fT = 2 × (ST − K)
++ + (K − ST )
++ − D (138)
+S∗up = K +
+D
+2
+(139)
+S∗down = K − D (140)
+Pmax = unlimited (141)
+Lmax = D (142)
+2.35 Strategy: Strip
+This is a volatility strategy consisting of a long position in an ATM call option, and
+a long position in two ATM put options with a strike price K. This is a net debit
+trade. The trader’s outlook is bearish. This is a capital gain strategy. We have:
+fT = (ST − K)
++ + 2 × (K − ST )
++ − D (143)
+S∗up = K + D (144)
+S∗down = K −
+D
+2
+(145)
+Pmax = unlimited (146)
+Lmax = D (147)
+2.36 Strategy: Call ratio backspread
+This strategy consists of a short position in NS close to ATM call options with a
+strike price K1, and a long position in NL OTM call options with a strike price K2,
+where NL > NS. Typically, NL = 2 and NS = 1, or NL = 3 and NS = 2. The
+trader’s outlook is strongly bullish. This is a capital gain strategy. We have:27
+fT = NL × (ST − K2)
++ − NS × (ST − K1)
++ − H (148)
+S∗down = K1 − H/NS, H < 0 (149)
+S∗up = (NL × K2 − NS × K1 + H)/(NL − NS) (150)
+Pmax = unlimited (151)
+Lmax = NS × (K2 − K1) + H (152)
+26 For some literature on strip and strap strategies, see, e.g., [Jha and Kalimipal, 2010],
+[Topaloglou, Vladimirou and Zenios, 2011].
+27 For some literature on call/put ratio (back)spreads, see, e.g., [Augustin, Brenner and Subrahmanyam, 2015], [Chaput and Ederington, 2008], [Solt´es, 2010], [ ˇ Solt´es and Amaitiek, 2010b], [ ˇ Solt´es ˇ
+and Rusn´akov´a, 2013].
+30
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.37 Strategy: Put ratio backspread
+This strategy consists of a short position in NS close to ATM put options with a
+strike price K1, and a long position in NL OTM put options with a strike price K2,
+where NL > NS. Typically, NL = 2 and NS = 1, or NL = 3 and NS = 2. The
+trader’s outlook is strongly bearish. This is a capital gain strategy. We have:
+fT = NL × (K2 − ST )
++ − NS × (K1 − ST )
++ − H (153)
+S∗up = K1 + H/NS, H < 0 (154)
+S∗down = (NL × K2 − NS × K1 − H)/(NL − NS) (155)
+Pmax = NL × K2 − NS × K1 − H (156)
+Lmax = NS × (K1 − K2) + H (157)
+2.38 Strategy: Ratio call spread
+This strategy consists of a short position in NS close to ATM call options with a
+strike price K1, and a long position in NL ITM call options with a strike price K2,
+where NL < NS. Typically, NL = 1 and NS = 2, or NL = 2 and NS = 3. This is
+an income strategy if it is structured as a net credit trade. The trader’s outlook is
+neutral to bearish. We have:28
+fT = NL × (ST − K2)
++ − NS × (ST − K1)
++ − H (158)
+S∗down = K2 + H/NL, H > 0 (159)
+S∗up = (NS × K1 − NL × K2 − H)/(NS − NL) (160)
+Pmax = NL × (K1 − K2) − H (161)
+Lmax = unlimited (162)
+2.39 Strategy: Ratio put spread
+This strategy consists of a short position in NS close to ATM put options with a
+strike price K1, and a long position in NL ITM put options with a strike price K2,
+where NL < NS. Typically, NL = 1 and NS = 2, or NL = 2 and NS = 3. This is
+an income strategy if it is structured as a net credit trade. The trader’s outlook is
+neutral to bullish. We have:
+fT = NL × (K2 − ST )
++ − NS × (K1 − ST )
++ − H (163)
+S∗up = K2 − H/NL, H > 0 (164)
+S∗down = (NS × K1 − NL × K2 + H)/(NS − NL) (165)
+Pmax = NL × (K2 − K1) − H (166)
+Lmax = NS × K1 − NL × K2 + H (167)
+28 So, the difference between call/put ratio backspreads and ratio call/put spreads is that in the
+former NL > NS, while in the latter NL < NS.
+31
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.40 Strategy: Long call butterfly
+This is a sideways strategy consisting of a long position in an OTM call option with
+a strike price K1, a short position in two ATM call options with a strike price K2,
+and a long position in an ITM call option with a strike price K3. The strikes are
+equidistant: K2 − K3 = K1 − K2 = κ. This is a relatively low cost net debit trade.
+The trader’s outlook is neutral. This is a capital gain strategy. We have:29
+fT = (ST − K1)
++ + (ST − K3)
++ − 2 × (ST − K2)
++ − D (168)
+S∗down = K3 + D (169)
+S∗up = K1 − D (170)
+Pmax = κ − D (171)
+Lmax = D (172)
+2.40.1 Strategy: Modified call butterfly
+This is a variation of the long call butterfly strategy where the strikes are no longer
+equidistant; instead we have K1−K2 < K2−K3. This results in a sideways strategy
+with a bullish bias. We have:
+fT = (ST − K1)
++ + (ST − K3)
++ − 2 × (ST − K2)
++ − D (173)
+S∗ = K3 + D (174)
+Pmax = K2 − K3 − D (175)
+Lmax = D (176)
+2.41 Strategy: Long put butterfly
+This is a sideways strategy consisting of a long position in an OTM put option with
+a strike price K1, a short position in two ATM put options with a strike price K2,
+and a long position in an ITM put option with a strike price K3. The strikes are
+equidistant: K3 − K2 = K2 − K1 = κ. This is a relatively low cost net debit trade.
+The trader’s outlook is neutral. This is a capital gain strategy. We have:
+fT = (K1 − ST )
++ + (K3 − ST )
++ − 2 × (K2 − ST )
++ − D (177)
+S∗up = K3 − D (178)
+S∗down = K1 + D (179)
+Pmax = κ − D (180)
+Lmax = D (181)
+29 For some literature on butterfly spreads (including iron butterflies), see, e.g., [Balb´as, Longarela and Lucia, 1999], [Howison, Reisinger and Witte, 2013], [Jongadsayakul, 2017], [Matsypura
+and Timkovsky, 2010], [Youbi, Pindza and Mar´e, 2017], [Wolf, 2014], [Wystup, 2017]. Academic
+literature on condor strategies (which can be thought of as variations on butterflies) appears to be
+more scarce. See, e.g., [Niblock, 2017].
+32
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.41.1 Strategy: Modified put butterfly
+This is a variation of the long put butterfly strategy where the strikes are no longer
+equidistant; instead we have K3−K2 < K2−K1. This results in a sideways strategy
+with a bullish bias. We have (for H > 0 there is also S∗up = K3 − H):30
+fT = (K1 − ST )
++ + (K3 − ST )
++ − 2 × (K2 − ST )
++ − H (182)
+S∗down = 2 × K2 − K3 + H (183)
+Pmax = K3 − K2 − H (184)
+Lmax = 2 × K2 − K1 − K3 + H (185)
+2.42 Strategy: Short call butterfly
+This is a volatility strategy consisting of a short position in an ITM call option with
+a strike price K1, a long position in two ATM call options with a strike price K2,
+and a short position in an OTM call option with a strike price K3. The strikes are
+equidistant: K3 − K2 = K2 − K1 = κ. This is a net credit trade. In this sense, this
+is an income strategy. However, the potential reward is sizably smaller than with a
+short straddle or a short strangle (albeit with a lower risk). The trader’s outlook is
+neutral. We have:
+fT = 2 × (ST − K2)
++ − (ST − K1)
++ − (ST − K3)
++ + C (186)
+S∗up = K3 − C (187)
+S∗down = K1 + C (188)
+Pmax = C (189)
+Lmax = κ − C (190)
+2.43 Strategy: Short put butterfly
+This is a volatility strategy consisting of a short position in an ITM put option with
+a strike price K1, a long position in two ATM put options with a strike price K2,
+and a short position in an OTM put option with a strike price K3. The strikes are
+equidistant: K2 − K3 = K1 − K2 = κ. This is a net credit trade. In this sense, this
+is an income strategy. However, the potential reward is sizably smaller than with a
+short straddle or a short strangle (albeit with a lower risk). The trader’s outlook is
+neutral. We have:
+fT = 2 × (K2 − ST )
++ − (K1 − ST )
++ − (K3 − ST )
++ + C (191)
+S∗down = K3 + C (192)
+S∗up = K1 − C (193)
+Pmax = C (194)
+Lmax = κ − C (195)
+30 Ideally, this should be structured as a net credit trade, albeit this may not always be possible.
+33
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.44 Strategy: “Long” iron butterfly
+This sideways strategy is a combination of a bull put spread and a bear call spread
+and consists of a long position in an OTM put option with a strike price K1, a
+short position in an ATM put option and an ATM call option with a strike price
+K2, and a long position in an OTM call option with a strike price K3. The strikes
+are equidistant: K2 − K1 = K3 − K2 = κ. This is a net credit trade. The trader’s
+outlook is neutral. This is an income strategy. We have:
+fT = (K1 − ST )
++ − (K2 − ST )
++ − (ST − K2)
++ + (ST − K3)
++ + C (196)
+S∗up = K2 + C (197)
+S∗down = K2 − C (198)
+Pmax = C (199)
+Lmax = κ − C (200)
+2.45 Strategy: “Short” iron butterfly
+This volatility strategy is a combination of a bear put spread and a bull call spread
+and consists of a short position in an OTM put option with a strike price K1, a
+long position in an ATM put option and an ATM call option with a strike price
+K2, and a short position in an OTM call option with a strike price K3. The strikes
+are equidistant: K2 − K1 = K3 − K2 = κ. This is a net debit trade. The trader’s
+outlook is neutral. This is a capital gain strategy. We have:
+fT = (K2 − ST )
++ + (ST − K2)
++ − (K1 − ST )
++ − (ST − K3)
++ − D (201)
+S∗up = K2 + D (202)
+S∗down = K2 − D (203)
+Pmax = κ − D (204)
+Lmax = D (205)
+2.46 Strategy: Long call condor
+This is a sideways strategy consisting of a long position in an ITM call option with a
+strike price K1, a short position in an ITM call option with a higher strike price K2,
+a short position in an OTM call option with a strike price K3, and a long position
+in an OTM call option with a higher strike price K4. All strikes are equidistant:
+K4 − K3 = K3 − K2 = K2 − K1 = κ. This is a relatively low cost net debit trade.
+The trader’s outlook is neutral. This is a capital gain strategy. We have:
+fT = (ST − K1)
++ − (ST − K2)
++ − (ST − K3)
++ + (ST − K4)
++ − D (206)
+S∗up = K4 − D (207)
+S∗down = K1 + D (208)
+34
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Pmax = κ − D (209)
+Lmax = D (210)
+2.47 Strategy: Long put condor
+This is a sideways strategy consisting of a long position in an OTM put option with a
+strike price K1, a short position in an OTM put option with a higher strike price K2,
+a short position in an ITM put option with a strike price K3, and a long position
+in an ITM put option with a higher strike price K4. All strikes are equidistant:
+K4 − K3 = K3 − K2 = K2 − K1 = κ. This is a relatively low cost net debit trade.
+The trader’s outlook is neutral. This is a capital gain strategy. We have:
+fT = (K1 − ST )
++ − (K2 − ST )
++ − (K3 − ST )
++ + (K4 − ST )
++ − D (211)
+S∗up = K4 − D (212)
+S∗down = K1 + D (213)
+Pmax = κ − D (214)
+Lmax = D (215)
+2.48 Strategy: Short call condor
+This is a volatility strategy consisting of a short position in an ITM call option with
+a strike price K1, a long position in an ITM call option with a higher strike price K2,
+a long position in an OTM call option with a strike price K3, and a short position
+in an OTM call option with a higher strike price K4. All strikes are equidistant:
+K4 − K3 = K3 − K2 = K2 − K1 = κ. This is a relatively low net credit trade.
+As with a short call butterfly, the potential reward is sizably smaller than with a
+short straddle or a short strangle (albeit with a lower risk). So, this is a capital gain
+(rather than an income) strategy. The trader’s outlook is neutral. We have:
+fT = (ST − K2)
++ + (ST − K3)
++ − (ST − K1)
++ − (ST − K4)
++ + C (216)
+S∗up = K4 − C (217)
+S∗down = K1 + C (218)
+Pmax = C (219)
+Lmax = κ − C (220)
+2.49 Strategy: Short put condor
+This is a volatility strategy consisting of a short position in an OTM put option with
+a strike price K1, a long position in an OTM put option with a higher strike price K2,
+a long position in an ITM put option with a strike price K3, and a short position
+in an ITM put option with a higher strike price K4. All strikes are equidistant:
+K4 − K3 = K3 − K2 = K2 − K1 = κ. This is a relatively low net credit trade.
+35
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+As with a short put butterfly, the potential reward is sizably smaller than with a
+short straddle or a short strangle (albeit with a lower risk). So, this is a capital gain
+(rather than an income) strategy. The trader’s outlook is neutral. We have:
+fT = (K2 − ST )
++ + (K3 − ST )
++ − (K1 − ST )
++ − (K4 − ST )
++ + C (221)
+S∗up = K4 − C (222)
+S∗down = K1 + C (223)
+Pmax = C (224)
+Lmax = κ − C (225)
+2.50 Strategy: Long iron condor
+This sideways strategy is a combination of a bull put spread and a bear call spread
+and consists of a long position in an OTM put option with a strike price K1, a short
+position in an OTM put option with a higher strike price K2, a short position in an
+OTM call option with a strike price K3, and a long position in an OTM call option
+with a higher strike price K4. The strikes are equidistant: K4 − K3 = K3 − K2 =
+K2 − K1 = κ. This is a net credit trade. The trader’s outlook is neutral. This is an
+income strategy. We have:
+fT = (K1 − ST )
++ + (ST − K4)
++ − (K2 − ST )
++ − (ST − K3)
++ + C (226)
+S∗up = K3 + C (227)
+S∗down = K2 − C (228)
+Pmax = C (229)
+Lmax = κ − C (230)
+2.51 Strategy: Short iron condor
+This volatility strategy is a combination of a bear put spread and a bull call spread
+and consists of a short position in an OTM put option with a strike price K1, a long
+position in an OTM put option with a higher strike price K2, a long position in an
+OTM call option with a strike price K3, and a short position in an OTM call option
+with a higher strike price K4. The strikes are equidistant: K4 − K3 = K3 − K2 =
+K2 − K1 = κ. This is a net debit trade. The trader’s outlook is neutral. This is a
+capital gain strategy. We have:
+fT = (K2 − ST )
++ + (ST − K3)
++ − (K1 − ST )
++ − (ST − K4)
++ − D (231)
+S∗up = K3 + D (232)
+S∗down = K2 − D (233)
+Pmax = κ − D (234)
+Lmax = D (235)
+36
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.52 Strategy: Long box
+This volatility strategy can be viewed as a combination of a long synthetic forward
+and a short synthetic forward, or as a combination of a bull call spread and a bear
+put spread, and consists of a long position in an ITM put option with a strike price
+K1, a short position in an OTM put option with a lower strike price K2, a long
+position in an ITM call option with the strike price K2, and a short position in an
+OTM call option with the strike price K1. The trader’s outlook is neutral. This is
+a capital gain strategy.31 We have (assuming K1 ≥ K2 + D):
+fT = (K1 − ST )
++ − (K2 − ST )
++ + (ST − K2)
++ − (ST − K1)
++ − D
+= K1 − K2 − D (236)
+Pmax = (K1 − K2) − D (237)
+2.53 Strategy: Collar
+This strategy (a.k.a. “fence”) is a covered call augmented by a long put option as
+insurance against the stock price falling.32 It amounts to buying stock, buying an
+OTM put option with a strike price K1, and selling an OTM call option with a
+higher strike price K2. The trader’s outlook is moderately bullish. This is a capital
+gain strategy. We have:33
+fT = ST − S0 + (K1 − ST )
++ − (ST − K2)
++ − H (238)
+S∗ = S0 + H (239)
+Pmax = K2 − S0 − H (240)
+Lmax = S0 − K1 + H (241)
+2.54 Strategy: Bullish short seagull spread
+This option trading strategy is a bull call spread financed with a sale of an OTM
+put option. It amounts to a short position in an OTM put option with a strike
+price K1, a long position in an ATM call option with a strike price K2, and a short
+position in an OTM call option with a strike price K3. Ideally, the trade should be
+structured to have zero cost. The trader’s outlook is bullish. This is a capital gain
+31 In some cases it can be used as a tax strategy – see, e.g., [Cohen, 2005]. For some literature
+on box option strategies, see, e.g., [BenZion, Anan and Yagil, 2005], [Bharadwaj and Wiggins,
+2001], [Billingsley and Chance, 1985], [Clarke, de Silva and Thorley, 2013], [Fung, Mok and Wong,
+2004], [Hemler and Miller, 1997], [Jongadsayakul, 2016], [Ronn and Ronn, 1989], [Vipul, 2009].
+32 Similarly, a short collar is a covered put augmented by a long call option.
+33 For some literature on collar strategies, see, e.g., [Bartonov´a, 2012], [Burnside et al, 2011],
+[D’Antonio, 2008], [Israelov and Klein, 2016], [Li and Yang, 2017], [Officer, 2004], [Officer, 2006],
+[Shan, Garvin and Kumar, 2010], [Szado and Schneeweis, 2010], [Szado and Schneeweis, 2011],
+[Timmermans, Schumacher and Ponds, 2017], [Yim et al, 2011].
+37
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+strategy. We have:34
+fT = −(K1 − ST )
++ + (ST − K2)
++ − (ST − K3)
++ − H (242)
+S∗ = K2 + H, H > 0 (243)
+S∗ = K1 + H, H < 0 (244)
+K1 ≤ S∗ ≤ K2, H = 0 (245)
+Pmax = K3 − K2 − H (246)
+Lmax = K1 + H (247)
+2.55 Strategy: Bearish long seagull spread
+This option trading strategy is a short combo (short risk reversal) hedged against
+the stock price rising by buying an OTM call option. It amounts to a long position
+in an OTM put option with a strike price K1, a short position in an ATM call option
+with a strike price K2, and a long position in an OTM call option with a strike price
+K3. Ideally, the trade should be structured to have zero cost. The trader’s outlook
+is bearish. This is a capital gain strategy. We have:
+fT = (K1 − ST )
++ − (ST − K2)
++ + (ST − K3)
++ − H (248)
+S∗ = K1 − H, H > 0 (249)
+S∗ = K2 − H, H < 0 (250)
+K1 ≤ S∗ ≤ K2, H = 0 (251)
+Pmax = K1 − H (252)
+Lmax = K3 − K2 + H (253)
+2.56 Strategy: Bearish short seagull spread
+This option trading strategy is a bear put spread financed with a sale of an OTM
+call option. It amounts to a short position in an OTM put option with a strike
+price K1, a long position in an ATM put option with a strike price K2, and a short
+position in an OTM call option with a strike price K3. Ideally, the trade should be
+structured to have zero cost. The trader’s outlook is bearish. This is a capital gain
+strategy. We have:
+fT = −(K1 − ST )
++ + (K2 − ST )
++ − (ST − K3)
++ − H (254)
+S∗ = K2 − H, H > 0 (255)
+S∗ = K3 − H, H < 0 (256)
+K2 ≤ S∗ ≤ K3, H = 0 (257)
+Pmax = K2 − K1 − H (258)
+Lmax = unlimited (259)
+34 Academic literature on seagull spreads appears to be scarce. For a book reference, see,
+e.g., [Wystup, 2017].
+38
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+2.57 Strategy: Bullish long seagull spread
+This option trading strategy is a long combo (long risk reversal) hedged against the
+stock price falling by buying an OTM put option. It amounts to a long position in
+an OTM put option with a strike price K1, a short position in an ATM put option
+with a strike price K2, and a long position in an OTM call option with a strike price
+K3. Ideally, the trade should be structured to have zero cost. The trader’s outlook
+is bullish. This is a capital gain strategy. We have:
+fT = (K1 − ST )
++ − (K2 − ST )
++ + (ST − K3)
++ − H (260)
+S∗ = K3 + H, H > 0 (261)
+S∗ = K2 + H, H < 0 (262)
+K2 ≤ S∗ ≤ K3, H = 0 (263)
+Pmax = unlimited (264)
+Lmax = K2 − K1 + H (265)
+39
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3 Stocks
+3.1 Strategy: Price-momentum
+Empirically, there appears to be certain “inertia” in stock returns known as the
+momentum effect, whereby future returns are positively correlated with past returns
+(see, e.g., [Asness, 1994], [Asness et al, 2014], [Asness, Moskowitz and Pedersen,
+2013], [Grinblatt and Moskowitz, 2004], [Jegadeesh and Titman, 1993]). Let t denote
+time measured in the units of 1 month, with t = 0 corresponding to the most recent
+time. Let Pi(t) be the time series of prices (fully adjusted for splits and dividends)
+for the stock labeled by i (i = 1, . . . , N, where N is the number of stocks in the
+trading universe). Let
+Ri(t) = Pi(t)
+Pi(t + 1) − 1 (266)
+R
+cum
+i =
+Pi(S)
+Pi(S + T)
+− 1 (267)
+R
+mean
+i =
+1
+T
+S+
+X
+T −1
+t=S
+Ri(t) (268)
+R
+risk.adj
+i =
+Rmean
+i
+σi
+(269)
+σ
+2
+i =
+1
+T − 1
+S+
+X
+T −1
+t=S
+(Ri(t) − R
+mean
+i
+)
+2
+(270)
+Here: Ri(t) is the monthly return; Rcum
+i
+is the cumulative return computed over the
+T-month “formation period” (usually T = 12) skipping the most recent S-month
+“skip period” (usually S = 1);35 Rmean
+i
+is the mean monthly return computed over
+the formation period; R
+risk.adj
+i
+is the risk-adjusted mean return over the formation
+period; and σi
+is the monthly volatility calculated over the formation period.
+The price-momentum strategy amounts to buying the best performing stocks
+and selling the worst performing stocks, where the “performance” is measured by a
+selection criterion based on Rcum
+i
+, Rmean
+i
+, R
+risk.adj
+i
+or some other criterion. E.g., after
+the stocks are sorted by Rcum
+i
+(in the decreasing order), the trader can, e.g., buy
+stocks in the top decile (winners) and short stocks in the bottom decile (losers).36
+This can be a zero-cost strategy, i.e., the corresponding portfolio is dollar-neutral.
+Alternatively, a long-only portfolio can be constructed by buying stocks in, e.g.,
+the top decile. Once a portfolio is established at t = 0, it is kept unaltered during
+35 Usually, the most recent month is skipped due to an empirically observed mean-reversion
+(a.k.a. contrarian) effect in monthly returns possibly rooted in liquidity/microstructure issues –
+see, e.g., [Asness, 1994], [Boudoukh, Richardson and Whitelaw, 1994], [Grinblatt and Moskowitz,
+2004], [Jegadeesh, 1990], [Lo and MacKinlay, 1990].
+36 There is some degree of arbitrariness in defining winners and losers.
+40
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+a predefined “holding period”,37 which can be 1 month or longer (longer holding
+period portfolios typically have diminishing returns before trading costs as the momentum effect fades with time). Multi-month-holding portfolios can be constructed
+by overlapping 1-month-holding portfolios (see, e.g., [Jegadeesh and Titman, 1993]).
+The above prescription does not fix the relative weights wi of the stocks in the
+portfolio. For a long-only portfolio we have wi ≥ 0 and
+X
+N
+i=1
+wi = 1 (271)
+So, if the total investment level is I, then the stock labeled by i has I × wi dollars
+invested in it. This, up to rounding, translates into Qi = I ×wi/Pi(0) shares.38 One
+can simply take uniform weights, wi = 1/N for all stocks, albeit other weighting
+schemes are possible. E.g., we can have nonuniform wi ∝ 1/σi
+, or wi ∝ 1/σ2
+i
+, etc.
+For a dollar-neutral portfolio we can have negative wi and
+X
+N
+i=1
+|wi
+| = 1 (272)
+X
+N
+i=1
+wi = 0 (273)
+So, if the total investment level is I = IL +IS, where IL is the total long investment,
+and IS is the absolute value of the total short investment,39 then the stock labeled
+by i has I × wi dollars invested in it, where wi > 0 for long stocks, and wi < 0
+for short stocks. One can simply take modulus-uniform weights, where wi = 1/2NL
+for all NL long stocks, and wi = −1/2NS for all NS short stocks. However, other
+weighting schemes are possible, e.g., as above, weights suppressed by σi
+, σ
+2
+i
+, etc.40
+3.2 Strategy: Earnings-momentum
+This strategy amounts to buying winners and selling losers as in the price-momentum
+strategy, but the selection criterion is based on earnings. One way to define such a
+37 Albeit, e.g., a long-only portfolio may have to be liquidated before the end of this holding
+period due to unforeseen events, such as market crashes.
+38 That is, assuming the stock is bought at the price Pi(0), which does not account for slippage.
+39 For dollar-neutral portfolios IL = IS and I = 2 × IL.
+40 For some additional literature on momentum strategies, see, e.g., [Antonacci, 2017], [Asem
+and Tian, 2010], [Barroso and Santa-Clara, 2014], [Bhojraj and Swaminathan, 2006], [Chordia and
+Shivakumar, 2002], [Chuang and Ho, 2014], [Cooper, Gutierrez and Hameed, 2004], [Daniel and
+Moskowitz, 2016], [G´eczy and Samonov, 2016], [Griffin, Ji and Martin, 2003], [Grundy and Martin,
+2001], [Hwang and George, 2004], [Jegadeesh and Titman, 2001], [Karolyi and Kho, 2004], [Korajczyk and Sadka, 2004], [Liu and Zhang, 2008], [Moskowitz and Grinblatt, 1999], [Rouwenhorst,
+1998], [Sadka, 2002], [Siganos and Chelley-Steeley, 2006], [Stivers and Sun, 2010].
+41
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+selection criterion is via standardized unexpected earnings (SUE) [Chan, Jegadeesh
+and Lakonishok, 1996]:41
+SUEi =
+Ei − E
+0
+i
+σi
+(274)
+Here: Ei
+is the most recently announced quarterly earnings per share of the stock
+labeled by i; E
+0
+i
+is the earnings per share announced 4 quarters ago; σi
+is the standard
+deviation of the unexpected earnings Ei−E
+0
+i
+over the last 8 quarters. Similarly to the
+price-momentum strategy, the trader can, e.g., construct a dollar-neutral portfolio
+by buying stocks in the top decile by SUE, and shorting stocks in the bottom decile.42
+3.3 Strategy: Value
+This strategy amounts to buying winners and selling losers as in the price-momentum
+and earnings-momentum strategies, but the selection criterion is based on value.
+Value can be defined as the Book-to-Price (B/P) ratio (see, e.g., [Rosenberg, Reid
+and Lanstein, 1985]). Here “Book” is the company’s book value per share outstanding (so the B/P ratio is the same as the Book-to-Market ratio, where now “Book”
+stands for its total book value, not per share outstanding, and “Market” is its market
+capitalization). The trader can, e.g., construct a zero-cost portfolio by buying stocks
+in the top decile by the B/P ratio, and shorting stocks in the bottom decile. There
+can be variations in the definition of the B/P ratio. Thus, e.g., [Asness, Moskowitz
+and Pedersen, 2013] uses current (i.e., most up-to-date) prices, while [Fama and
+French, 1992] and some others use prices contemporaneous with the book value.43
+3.4 Strategy: Low-volatility anomaly
+This strategy is based on the empirical observation that future returns of previously
+low-return-volatility portfolios outperform those of previously high-return-volatility
+portfolios,44 which goes counter to the “na¨ıve” expectation that higher risk assets
+41 Also see, e.g., [Bartov, Radhakrishnan and Krinsky, 2005], [Battalio and Mendenhall, 2007],
+[Bernard and Thomas, 1989], [Bernard and Thomas, 1990], [Bhushan, 1994], [Chordia et al, 2009],
+[Chordia and Shivakumar, 2006], [Czaja, Kaufmann and Scholz, 2013], [Doyle, Lundholm and
+Soliman, 2006], [Foster, Olsen and Shevlin, 1984], [Hew et al, 1996], [Hirshleifer, Lim and Teoh,
+2009], [Jansen and Nikiforov, 2016], [Livnat and Mendenhall, 2006], [Loh and Warachka, 2012],
+[Mendenhall, 2004], [Ng, Rusticus and Verdi, 2008], [Rendleman, Jones and Latan´e, 1982], [Stickel,
+1991], [Watts, 1978].
+42 Typically, the holding period is 6 months, with diminishing returns for longer holding periods.
+43 The holding period typically is 1-6 months. For some additional literature on value strategies,
+see, e.g., [Erb and Harvey, 2006], [Fama and French, 1993], [Fama and French, 1996], [Fama and
+French, 1998], [Fama and French, 2012], [Fisher, Shah and Titman, 2016], [Gerakos and Linnainmaa, 2012], [Novy-Marx, 2013], [Piotroski, 2000], [Piotroski and So, 2012], [Stattman, 1980], [Suhonen, Lennkh and Perez, 2017], [Zhang, 2005].
+44 See, e.g., [Ang et al, 2006], [Ang et al, 2009], [Baker, Bradley and Wurgler, 2011], [Black,
+1972], [Blitz and van Vliet, 2007], [Clarke, de Silva and Thorley, 2006], [Clarke, de Silva and
+42
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+should yield proportionately higher returns. Thus, if σi
+is defined as the historical volatility (computed over a time series of historical returns, as in Eq. (270)),
+the trader can, e.g., construct a dollar-neutral portfolio by buying stocks in the
+bottom decile by σi (low-volatility stocks), and shorting stocks in the top decile
+(high-volatility stocks). The length of the sample used for computing the historical
+volatility can, e.g., be 6 months (126 trading days) to a year (252 trading days),
+with a similar duration for the holding period (with no “skip period” required).
+3.5 Strategy: Implied volatility
+This strategy is based on the empirical observation that stocks with larger increases
+in call implied volatilities over the previous month on average have higher future returns, while stocks with larger increases in put implied volatilities over the previous
+month on average have lower future returns (see, e.g., [An et al, 2014], [Chen, Chung
+and Tsai, 2016]).45 Therefore, the trader can, e.g., construct a dollar-neutral portfolio by buying stocks in the top decile by the increase in call implied volatilities, and
+shorting stocks in the top decile by the increase in put implied volatilities. One can
+also consider variations, e.g., buying stocks in the top decile by the difference twixt
+the change in call implied volatilities and the change in put implied volatilities.
+3.6 Strategy: Multifactor portfolio
+This strategy amounts to buying and shorting stocks based on multiple factors such
+as value, momentum, etc. For instance, usually value and momentum are negatively
+correlated and combining them can add value (see, e.g., [Asness, Moskowitz and
+Pedersen, 2013]). There is a variety of ways in which F > 1 factors can be combined.46 The simplest way is to diversify the exposure to the F factors with some
+weights wA, where A = 1, . . . , F labels the factors. That is, if I is the total investment level, then the F portfolios (each built as above based on the corresponding
+factor) are allocated the investment levels IA = wA ×I, where (assuming all wA > 0)
+X
+F
+A=1
+wA = 1 (275)
+Thus, one can simply take uniform weights wA = 1/F, albeit this may not be the
+most optimal weighting scheme. E.g., similarly to Subsection 3.1, there are weighting
+Thorley, 2010], [Frazzini and Pedersen, 2014], [Fu, 2009], [Garcia-Feij´oo et al, 2015], [Li, Sullivan
+and Garcia-Feij´oo, 2014], [Li, Sullivan and Garcia-Feij´oo, 2016], [Merton, 1987].
+45 Also see, e.g., [Bali and Hovakimian, 2009], [Bollen and Whaley, 2004], [Busch, Christensen
+and Nielsen, 2011], [Chakravarty, Gulen and Mayhew, 2004], [Conrad, Dittmar and Ghysels, 2013],
+[Cremers and Weinbaum, 2010], [Pan and Poteshman, 2006], [Xing, Zhang and Zhao, 2010].
+46 And the holding period depends on which factors are combined.
+43
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+schemes with wA ∝ 1/σA, wA ∝ 1/σ2
+A, etc., where σA is the historical volatility for
+the corresponding factor portfolio (uniformly normalized, e.g., per dollar invested).47
+Alternatively, consider F rankings of stocks based on the F factors. One can
+now combine these rankings in various ways to blend the factors. E.g., in the case
+of two factors, momentum and value, one can take the top (winners) and bottom
+(losers) quintiles by momentum and further split them into top half and bottom
+half, respectively, by value. Or one can take the top and bottom quintiles by value
+and split them by momentum.48 Yet another way is to define demeaned ranks
+sAi = rank(fAi) −
+1
+N
+X
+N
+j=1
+rank(fAj ) (276)
+where fAi is the numeric value of the factor labeled by A (e.g., momentum) for the
+stock labeled by i (i = 1, . . . , N). One can then simply average the ranks:
+si =
+1
+F
+X
+F
+A=1
+sAi (277)
+The combined “score” si can have ties, which, if need be (e.g., if there is an ambiguity
+at the border of the top decile) can be resolved, e.g., simply by giving preference to
+one of the factor rankings. Averaging over sAi simply minimizes the sum of squares
+of the Euclidean distances between the N-vector si and the K N-vectors sAi. One
+can introduce nonuniform weights into this sum (which would amount to a weighted
+average in Eq. (277)), or even use a different definition of the distance (e.g., the
+Manhattan distance), which would complicate the problem computationally. Etc.49
+3.7 Strategy: Residual momentum
+This is the same as the price-momentum strategy with the stock returns Ri(t) replaced by the residuals i(t) of a serial regression of the stock returns Ri(t) over,
+e.g., the 3 Fama-French factors MKT(t), SMB(t), HML(t),50 with the intercept (see,
+47 Another approach is to fix the weights wA by optimizing a portfolio of the F expected returns
+corresponding to the F factors (using an invertible F × F covariance matrix for these returns).
+48 These two ways generally do not produce the same resultant portfolios.
+49 For additional literature on multifactor strategies, see, e.g., [Amenc et al, 2016], [Amenc et
+al, 2015], [Arnott et al, 2013], [Asness, 1997], [Barber, Bennett and Gvozdeva, 2015], [Cochrane,
+1999], [Fama, 1996], [Grinold and Kahn, 2000], [Hsu, Lin and Vincent, 2018], [Kahn and Lemmon,
+2015], [Kahn and Lemmon, 2016], [Kozlov and Petajisto, 2013], [Malkiel, 2014], [Wang, 2005].
+50 The stock returns Ri are defined in excess of the risk-free rate (the one-month Treasury bill
+rate); MKT is the excess return of the market portfolio; SMB is the excess return of the Small
+minus Big (by market capitalization) portfolio; HML is the excess return of the High minus Low
+(by book-to-market) portfolio. See, e.g., [Carhart, 1997], [Fama and French, 1993] for details.
+44
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+e.g., [Blitz, Huij and Martens, 2011]):51
+Ri(t) = αi + β1,i MKT(t) + β2,i SMB(t) + β3,i HML(t) + i(t) (278)
+The regression is run over a 36-month period [Blitz, Huij and Martens, 2011] (with
+the 1-month skip period) to estimate the regression coefficients αi
+, β1,i, β2,i, β3,i.
+Once the coefficients are estimated, the residuals can be computed for the 12-month
+formation period (again, with the 1-month skip period):
+i(t) = Ri(t) − β1,i MKT(t) − β2,i SMB(t) − β3,i HML(t) (279)
+Note that αi
+is not included in this computation of the residuals for the 12-month
+formation period as αi was computed for the 36-month period. These residuals
+i(t) are then used to compute, e.g., the risk-adjusted residual returns Rerisk.adj
+i
+(here
+S = 1 and T = 12; the holding period typically is 1 month, but can be longer):
+
+mean
+i =
+1
+T
+S+
+X
+T −1
+t=S
+i(t) (280)
+Rerisk.adj
+i =
+
+mean
+i
+σei
+(281)
+σe
+2
+i =
+1
+T − 1
+S+
+X
+T −1
+t=S
+(i(t) − 
+mean
+i
+)
+2
+(282)
+E.g., a dollar-neutral portfolio can be constructed by buying stocks in the top decile
+by Rerisk.adj
+i
+, and shorting stocks in the bottom decile (with (non)uniform weights).
+3.8 Strategy: Pairs trading
+This dollar-neutral strategy amounts to identifying a pair of historically highly correlated stocks (call them stock A and stock B) and, when a mispricing (i.e., a deviation
+from the high historical correlation) occurs, shorting the “rich” stock and buying
+the “cheap” stock. This is an example of a mean-reversion strategy. Let PA(t1) and
+PB(t1) be the prices of stock A and stock B at time t1, and let PA(t2) and PB(t2)
+be the prices of stock A and stock B at a later time t2. All prices are fully adjusted
+for any splits and dividends. The corresponding returns (from t1 to t2) are
+RA =
+PA(t2)
+PA(t1)
+− 1 (283)
+RB =
+PB(t2)
+PB(t1)
+− 1 (284)
+51 For some additional literature related to the residual momentum strategy, see, e.g., [Blitz et al,
+2013], [Chang et al, 2016], [Chaves, 2012], [Chuang, 2015], [Grundy and Martin, 2001], [Gutierrez
+and Prinsky, 2007], [H¨uhn and Scholz, 2017], [Huij and Lansdorp, 2017], [Van Oord, 2016].
+45
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Since typically these returns are small, we can use an alternative definition:
+RA = ln 
+PA(t2)
+PA(t1)
+
+(285)
+RB = ln 
+PB(t2)
+PB(t1)
+
+(286)
+Next, let ReA and ReB be the demeaned returns:
+R =
+1
+2
+(RA + RB) (287)
+ReA = RA − R (288)
+ReB = RB − R (289)
+where R is the mean return. A stock is “rich” if its demeaned return is positive,
+and it is “cheap” if its demeaned return is negative. The numbers of shares QA, QB
+to short/buy are fixed by the total desired dollar investment I (Eq. (290)) and the
+requirement of dollar-neutrality (Eq. (291)):
+PA |QA| + PB |QB| = I (290)
+PA QA + PB QB = 0 (291)
+where PA, PB are the stock prices at the time t∗ the position is established (t∗ ≥ t2).52
+3.9 Strategy: Mean-reversion – single cluster
+This is a generalization of the pairs trading strategy to N > 2 stocks that are
+historically highly correlated (e.g., stocks belonging to the same industry or sector).
+Let Ri
+, i = 1, . . . , N, be the returns for these N stocks:
+Ri = ln 
+Pi(t2)
+Pi(t1)
+
+(292)
+R =
+1
+N
+X
+N
+i=1
+Ri (293)
+Rei = Ri − R (294)
+52 For some literature on pairs trading, see, e.g., [Bogomolov, 2013], [Bowen and Hutchinson,
+2016], [Bowen, Hutchinson and O’Sullivan, 2010], [Caldeira and Moura, 2013], [Chen et al, 2017],
+[Do and Faff, 2010], [Do and Faff, 2012], [Elliott, Van Der Hoek and Malcolm, 2005], [Engle and
+Granger, 1987], [Gatev, Goetzmann and Rouwenhorst, 2006], [Huck, 2009], [Huck, 2015], [Huck
+and Afawubo, 2014], [Jacobs and Weber, 2015], [Kakushadze, 2015b], [Kim, 2011], [Kishore, 2012],
+[Krauss, 2017], [Krauss and St¨ubinger, 2017], [Liew and Wu, 2013], [Lin, McCrae and Gulati,
+2006], [Liu, Chang and Geman, 2017], [Miao, 2014], [Perlin, 2009], [Pizzutilo, 2013], [Rad, Low
+and Faff, 2016], [St¨ubinger and Bredthauer, 2017], [St¨ubinger and Endres, 2017], [Vaitonis and
+Masteika, 2016], [Vidyamurthy, 2004], [Xie et al, 2014], [Yoshikawa, 2017], [Zeng and Lee, 2014].
+46
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+Following the pairs trading intuition, we can short stocks with positive Rei and buy
+stocks with negative Rei
+. We have the following conditions:
+X
+N
+i=1
+Pi
+|Qi
+| = I (295)
+X
+N
+i=1
+Pi Qi = 0 (296)
+Here: I is the total desired dollar investment; Eq. (296) is the dollar-neutrality
+constraint; Qi < 0 for short-sales; Qi > 0 for buys; Pi are the prices at the time
+the position is established. We have 2 equations and N > 2 unknowns. A simple
+prescription (which is one out of myriad possibilities) for specifying Qi
+is to have
+the dollar positions Di = Pi Qi proportional to the demeaned returns:
+Di = −γ Rei (297)
+where γ > 0 (recall that we short Rei > 0 stocks and buy Rei < 0 stocks). Then Eq.
+(296) is automatically satisfied, while Eq. (295) fixes γ:
+γ =
+I
+PN
+i=1
+
+
+
+Rei
+
+
+
+(298)
+3.9.1 Strategy: Mean-reversion – multiple clusters
+The mean-reversion strategy of Subsection 3.9 can be readily generalized to the case
+where we have K > 1 clusters such that stocks within each cluster are historically
+highly correlated.53 We can simply treat clusters independently from each other and
+construct a mean-reversion strategy following the above procedure in each cluster.
+Then, e.g., we can allocate investments to these K independent strategies uniformly.
+There is a neat way of treating all clusters in a “unified” fashion using a linear
+regression. Let the K clusters be labeled by A = 1, . . . , K. Let ΛiA be an N × K
+matrix such that if the stock labeled by i (i = 1, . . . , N) belongs to the cluster
+labeled by A, then ΛiA = 1; otherwise, ΛiA = 0. We will assume that each and
+every stock belongs to one and only one cluster (so there are no empty clusters):
+NA =
+X
+N
+i=1
+ΛiA > 0 (299)
+N =
+X
+K
+A=1
+NA (300)
+53 E.g., these clusters can correspond to sectors, such as energy, technology, healthcare, etc.
+47
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+We have
+ΛiA = δG(i),A (301)
+G : {1, . . . , N} 7→ {1, . . . , K} (302)
+Here: G is the map between stocks and clusters; and ΛiA is the loadings matrix.
+Now consider a linear regression of the stock returns Ri over ΛiA (without the
+intercept and with unit weights):
+Ri =
+X
+K
+A=1
+ΛiA fA + εi (303)
+where fA are the regression coefficients given by (in matrix notation, where R is the
+N-vector Ri
+, f is the K-vector fA, and Λ is the N × K matrix ΛiA)
+f = Q
+−1 Λ
+T R (304)
+Q = ΛT Λ (305)
+and εi are the regression residuals. For binary ΛiA given by Eq. (301), these residuals
+are nothing but the returns Ri demeaned w.r.t. to the corresponding cluster:
+ε = R − Λ Q
+−1 Λ
+T R (306)
+QAB = NA δAB (307)
+RA =
+1
+NA
+X
+j∈JA
+Rj (308)
+εi = Ri − RG(i) = Rei (309)
+where RA is the mean return for the cluster labeled by A, and Rei
+is the demeaned
+return obtained by subtracting from Ri the mean return for the cluster labeled by
+A = G(i) to which the stock labeled by i belongs: JA = {i|G(i) = A} ⊂ {1, . . . , N}.
+The demeaned returns are cluster-neutral, i.e.,
+X
+N
+i=1
+Rei ΛiA = 0, A = 1, . . . , K (310)
+Also, note that we automatically have (so Di given by Eq. (297) satisfy Eq. (296))
+X
+N
+i=1
+Rei νi = 0 (311)
+where νi ≡ 1, i = 1, . . . , N, i.e., the N-vector ν is the unit vector. In the regression
+language, ν is the intercept. We did not have to add the intercept to the loadings
+matrix Λ as it is already subsumed in it:
+X
+K
+A=1
+ΛiA = νi (312)
+48
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.10 Mean-reversion – weighted regression
+The conditions (310) satisfied by the demeaned returns when the loadings matrix is
+binary simply mean that these returns are cluster-neutral, i.e., orthogonal to the K
+N-vectors v
+(A)
+comprising the columns of ΛiA. Such orthogonality can be defined
+for any loadings matrix, not just a binary one. So, we can consider a generalization
+where the loadings matrix, call it ΩiA, may have some binary columns, but generally
+it need not. The binary columns, if any, can, e.g., be industry (or sector) based risk
+factors; the non-binary columns are interpreted as some non-industry based risk
+factors; and the orthogonality condition
+X
+N
+i=1
+Rei ΩiA, A = 1, . . . , K (313)
+can be satisfied if the twiddled returns Rei are related to the residuals εi of the
+regression of Ri over ΩiA with some (generally nonuniform) regression weights zi via
+Re = Z ε (314)
+ε = R − Ω Q
+−1 Ω
+T Z R (315)
+Z = diag(zi) (316)
+Q = ΩT Z Ω (317)
+If the intercept is included in ΩiA (i.e., a linear combination of the columns of ΩiA
+equals the unit N-vector ν), then we automatically have
+X
+N
+i=1
+Rei = 0 (318)
+The weights zi can, e.g., be taken as zi = 1/σ2
+i
+, where σi are historical volatilities.54
+3.11 Strategy: Single moving average
+This strategy is based on the stock price crossing a moving average. One can use
+different types of moving averages (MAs), such as a simple moving average (SMA),
+54 For some literature on mean-reversion (a.k.a. contrarian) strategies, see, e.g., [Avellaneda
+and Lee, 2010], [Black and Litterman, 1991], [Black and Litterman, 1992], [Cheung, 2010], [Chin,
+Prevost and Gottesman, 2002], [Conrad and Kaul, 1998], [Daniel, 2001], [Da Silva, Lee and Pornrojnangkool, 2009], [Doan, Alexeev and Brooks, 2014], [Drobetz, 2001], [Hodges and Carverhill,
+1993], [Idzorek, 2007], [Jansen and Nikiforov, 2016], [Jegadeesh and Titman, 1995], [Kakushadze,
+2015b], [Kang, Liu and Ni, 2002], [Kudryavtsev, 2012], [Lakonishok, Shleifer and Vishny, 1994],
+[Lehmann, 1990], [Li et al, 2012], [Liew and Roberts, 2013], [Lo and MacKinlay, 1990], [Mun, Vasconcellos and Kish, 2000], [O’Tool, 2013], [Pole, 2007], [Poterba and Summers, 1988], [Satchell and
+Scowcroft, 2000], [Schiereck, Bondt and Weber, 1999], [Shi, Jiang and Zhou, 2015], [Yao, 2012].
+49
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+or an exponential moving average (EMA):55
+SMA(T) = 1
+T
+X
+T
+t=1
+P(t) (319)
+EMA(T, λ) =
+PT
+t=1 λ
+t−1 P(t)
+PT
+t=1 λ
+t−1
+=
+1 − λ
+1 − λ
+T
+X
+T
+t=1
+λ
+t−1 P(t) (320)
+Here: t = 1 corresponds to the most recent time in the time series of historical stock
+prices P(t); T is the length of the MA (t and T are usually measured in trading
+days); and λ < 1 is the factor which suppresses past contributions. Below MA will
+refer to SMA or EMA. A simple strategy is defined as follows (P is the price at
+t = 0, on the trading day immediately following the most recent trading day t = 1
+in the time series P(t)):
+Signal = (
+Establish long/liquidate short position if P > MA(T)
+Establish short/liquidate long position if P < MA(T)
+(321)
+This strategy can be run as, e.g., long-only, short-only, or both long and short. It
+can be straightforwardly applied to multiple stocks (on a single-stock basis, with no
+cross-sectional interaction between the signals for individual stocks). With a large
+number of stocks, it may be possible to construct (near-)dollar-neutral portfolios.
+3.12 Strategy: Two moving averages
+The simplest variant of this strategy replaces the stock price P in Eq. (321) by
+another moving average. That is, we have 2 moving averages with lengths T
+0 and
+T, where T
+0 < T (e.g., T
+0 = 10 and T = 30), and the signal is given by:
+Signal = (
+Establish long/liquidate short position if MA(T
+0
+) > MA(T)
+Establish short/liquidate long position if MA(T
+0
+) < MA(T)
+(322)
+This signal can be augmented with additional “stop-loss” rules to protect realized
+profits. E.g., if a long position has been established, the trader can define a threshold
+55 For T  1 we have λ
+T  1 and EMA(T, λ) ≈ (1 − λ) P(1) + λ EMA(T − 1, λ), where
+EMA(T −1, λ) is based on P(2), P(3), . . . , P(T). Also, for some literature on moving average based
+strategies, see, e.g., [BenZion et al, 2003], [Brock, Lakonishock and LeBaron, 1992], [Dzikeviˇcius and
+Saranda, 2010], [Edwards and Magee, 1992], [Faber, 2007], [F´elix and Rodr´ıguez, 2008], [Fifield, ˇ
+Power and Knipe, 2008], [Fong and Yong, 2005], [Gen¸cay, 1996], [Gen¸cay, 1998], [Gen¸cay and
+Stengos, 1998], [Glabadanidis, 2015], [Gunasekarage and Power, 2001], [Hung, 2016], [James, 1968],
+[Jasemi and Kimiagari, 2012], [Kilgallen, 2012], [Li et al, 2015], [Lo, Mamaysky and Wang, 2000],
+[Metghalchi, Marcucci and Chang, 2012], [P¨at¨ari and Vilska, 2014], [Taylor and Allen, 1992],
+[Weller, Friesen and Dunham, 2009], [Zakamulin, 2014a], [Zakamulin, 2015].
+50
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+to liquidate the long position if the stock begins to fall (even if the shorter moving
+average has not crossed the longer moving average yet):
+Signal =
+
+
+
+Establish long position if MA(T
+0
+) > MA(T)
+Liquidate long position if P < (1 − ∆) × P1
+Establish short position if MA(T
+0
+) < MA(T)
+Liquidate short position if P > (1 + ∆) × P1
+(323)
+Here ∆ is some predefined percentage, e.g., ∆ = 2%. So, a long position is liquidated
+if the current price P falls over 2% below the previous day’s price P1; and a short
+position is liquidated if P rises over 2% above P1. Other variations can be used.
+3.13 Strategy: Three moving averages
+In some cases, using 3 moving averages with lengths T1 < T2 < T3 (e.g., T1 = 3,
+T2 = 10, T3 = 21) can help filter false signals:
+Signal =
+
+
+
+Establish long position if MA(T1) > MA(T2) > MA(T3)
+Liquidate long position if MA(T1) ≤ MA(T2)
+Establish short position if MA(T1) < MA(T2) < MA(T3)
+Liquidate short position if MA(T1) ≥ MA(T2)
+(324)
+3.14 Strategy: Support and resistance
+This strategy uses “support” S and “resistance” R levels, which can be computed
+using the “pivot point” (a.k.a. the “center”) C as follows:56
+C =
+PH + PL + PC
+3
+(325)
+R = 2 × C − PL (326)
+S = 2 × C − PH (327)
+Here PH, PL and PC are the previous day’s high, low and closing prices. One way
+to define a trading signal is as follows (as above, P is the current price):
+Signal =
+
+
+
+Establish long position if P > C
+Liquidate long position if P ≥ R
+Establish short position if P < C
+Liquidate short position if P ≤ S
+(328)
+56 Other definitions of the pivot point (e.g., using the current trading day’s open price) and
+higher/lower support/resistance levels exist. For some literature on support and resistance strategies, see, e.g., [Amiri et al, 2010], [Brock, Lakonishock and LeBaron, 1992], [Garzarelli et al, 2014],
+[Hardy, 1978], [Kahneman and Tversky, 1979], [Murphy, 1986], [Osler, 2000], [Osler, 2003], [Person,
+2007], [Pring, 1985], [Shiu and Lu, 2011], [Thomsett, 2003], [Zapranis and Tsinaslanidis, 2012].
+51
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.15 Strategy: Channel
+This strategy amounts to buying and selling a stock when it reaches the floor and
+the ceiling of a channel, respectively. A channel is a range/band, bounded by a
+ceiling and a floor, within which the stock price fluctuates. The trader’s expectation
+may be that if the floor or the ceiling is reached, the stock price will bounce in the
+opposite direction. On the other hand, if the stock price breaks through the ceiling
+or the floor, the trader may conclude that a new trend has emerged and follow this
+new trend instead. A simple and common definition of a channel is the Donchian
+Channel [Donchian, 1960], where the ceiling Bup and the floor Bdown are defined as
+follows (with the same notations as above):57
+Bup = max(P(1), P(2), . . . , P(T)) (329)
+Bdown = min(P(1), P(2), . . . , P(T)) (330)
+A simple trading strategy then is as follows:
+Signal = (
+Establish long/liquidate short position if P = Bdown
+Establish short/liquidate long position if P = Bup
+(331)
+The wider the channel, the higher the volatility. Usually, the channel indicator is
+used together with other indicators. E.g., the signal can be more robust when a
+price reversal (or a channel break) occurs with an increase in the traded volume.
+3.16 Strategy: Event-driven – M&A
+This strategy, referred to as “merger arbitrage” or “risk arbitrage”, attempts to capture excess returns generated via corporate actions such as mergers and acquisitions
+(M&A). A merger arbitrage opportunity arises when one publicly traded company
+intends to acquire another publicly traded company at a price that differs from the
+latter’s market price. In this regard, there are two main types of transactions: cash
+mergers and stock mergers. In the case of a cash merger, the trader establishes a
+long position in the target company stock. In the case of a stock merger, the trader
+establishes a long position in the target company stock (call it A) and a short position in the acquirer company stock (call it B). For instance, if the current price of A
+is $67, the current price of B is $35, and under the proposed stock merger deal each
+share of A is swapped for 2 shares of B, then the trader buys one share of A and
+shorts 2 shares of B generating an initial net credit of $3 = 2 × $35 − $67, which is
+the profit per each share of A bought if the deal goes through. The trader’s risk is
+in that, if the deal falls through, the trader will likely lose money on this trade.58
+57 For some additional literature on channel trading strategies, see, e.g., [Batten and Ellis, 1996],
+[Birari and Rode, 2014], [Dempster and Jones, 2002], [De Zwart et al, 2009], [Elder, 2014], [Sullivan,
+Timmermann and White, 1999].
+58 For some literature on merger arbitrage, see, e.g., [Andrade, Mitchell and Stafford, 2001],
+[Andrie¸s and Vˆırlan, 2017], [Baker, Pan and Wurgler, 2012], [Baker and Sava¸soglu, 2002], [Bester,
+52
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.17 Strategy: Machine learning – single-stock KNN
+Some strategies rely on machine learning techniques, such as the k-nearest neighbor
+(KNN) algorithm (see, e.g., [Altman, 1992], [Samworth, 2012]), to predict future
+stock returns (the target variable) based on a set of predictor (feature) variables,
+which can be based on technical, fundamental and/or some other data. The strategy
+we describe here is a single-stock strategy, i.e., for each stock the target variable is
+predicted using the price and volume data only for this stock (but no cross-sectional
+data, i.e., no data for other stocks). The target variable Y (t) is defined as the
+cumulative return over the next T trading days (as above, the ascending integer
+values of t, which is measured in trading days, correspond to going back in time):
+Y (t) = P(t − T)
+P(t)
+− 1 (332)
+The predictor variables Xa(t), a = 1, . . . , m, are defined using prices P(t
+0
+) and
+volumes V (t
+0
+) at times t
+0 before t (i.e., t
+0 > t), so they are out-of-sample. Examples
+of such variables are moving averages of the price and volume of varying lengths:
+X1(t) = 1
+T1
+X
+T1
+s=1
+V (t + s) (333)
+X2(t) = 1
+T2
+X
+T2
+s=1
+P(t + s) (334)
+X3(t) = 1
+T3
+X
+T3
+s=1
+P(t + s) (335)
+. . . (336)
+The predictor variables are further normalized to lie between 0 and 1:
+Xea(t) = Xa(t) − X−
+a
+X+
+a − X−
+a
+(337)
+where X+
+a
+and X−
+a
+are the maximum and minimum values of Xa(t) over the training
+period. The final ingredient is the number k of the nearest neighbors (see below).
+For a given value of t we can take k nearest neighbors of the m-vector Xea(t) among
+the m-vectors Xea(t
+0
+), t
+0 = t + 1, t + 2, . . . , t + T∗, using the KNN algorithm (here
+Martinez and Rosu, 2017], [Brown and Raymond, 1986], [Cao et al, 2016], [Cornelli and Li, 2002],
+[Dukes, Frolich and Ma, 1992], [Hall, Pinnuck and Thorne, 2013], [Harford, 2005], [Hsieh and
+Walkling, 2005], [Huston, 2000], [Jetley and Ji, 2010], [Karolyi and Shannon, 1999], [Khan, 2002],
+[Larker and Lys, 1987], [Lin, Lan and Chuang, 2013], [Maheswaran and Yeoh, 2005], [Mitchell and
+Pulvino, 2001], [Officer, 2004], [Officer, 2006], [Samuelson and Rosenthal, 1986], [Subramanian,
+2004], [Van Tassel, 2016], [Walkling, 1985].
+53
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+T∗ is the sample size). For KNN we can use the Euclidean distance D(t, t0
+) between
+Xea(t) and Xea(t
+0
+) defined as
+[D(t, t0
+)]2 =
+Xm
+a=1
+(Xea(t) − Xea(t
+0
+))2
+(338)
+However, we can use some other distance (e.g., the Manhattan distance). Let the k
+nearest neighbors of Xea(t) be Xea(t
+0
+α
+(t)), α = 1, . . . , k. (Note that the k values t
+0
+α
+(t)
+depend on t.) Then we can define the predicted value Y(t) simply as an average of
+the corresponding realized values Y (t
+0
+α
+(t)):
+Y(t) = 1
+k
+X
+k
+α=1
+Y (t
+0
+α
+(t)) (339)
+Alternatively, we can, e.g., consider a linear model
+Y(t) = X
+k
+α=1
+Y (t
+0
+α
+(t)) wα + v (340)
+and fix the coefficients wα and v by running a regression59 of the realized values
+Y (t) over Y (t
+0
+α
+(t)) for some number – call it M – of values of t. I.e., we pull Y (t)
+for these values of t into an M-vector and regress it over the M × k matrix of the
+corresponding values Y (t
+0
+α
+(t)). The coefficients of this regression are wα and v.
+The advantage of using Eq. (339) is simplicity – there are no parameters to train
+in this case. We still have to backtest the strategy (see below) out-of-sample. The
+disadvantage is that equally weighting contributions of all k nearest neighbors could
+be suboptimal. In this regard, there are various (e.g., distance-based) weighting
+schemes one may consider. Nontrivial weighting is precisely what Eq. (340) intends
+to capture. However, this requires training and cross-validation (using metrics such
+as root mean square error), and the fitted parameters wα and v can be (and often
+are) out-of-sample unstable. The data can be split, e.g., 60% for training and 40%
+for cross-validation. Ultimately, the strategy must backtest well out-of-sample.
+The signal at t = 0 can be defined using the predicted value Y = Y(0), which is
+the expected return for the next T days. For single-stock trading60 one can simply
+define thresholds for establishing long and short trades, and liquidating existing
+59 We can run this regression without the intercept, in which case we only have the coefficients
+wα, or with the intercept, in which case we also have the coefficient v.
+60 Alternatively, one can use expected returns Yi computed for N stocks (where N  1) using
+a machine learning algorithm as above and then use these expected returns in multi-stock crosssectional strategies such as mean-reversion/statistical arbitrage.
+54
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+positions, e.g., as follows:61
+Signal =
+
+
+
+Establish long position if Y > z1
+Liquidate long position if Y ≤ z2
+Establish short position if Y < −z1
+Liquidate short position if Y ≥ −z2
+(341)
+Here, z1 and z2 are trader-defined thresholds. This signal must be backtested outof-sample. The number k of nearest neighbors can be optimized using a backtest
+(by trying a set of values of k). Alternatively, one can use a common heuristic, e.g.,
+k = floor(√
+T∗) or k = ceiling(√
+T∗). Also see, e.g., [Hall, Park and Samworth, 2008].
+3.18 Strategy: Statistical arbitrage – optimization
+Let Cij be the sample or model covariance matrix for the N stock returns in a
+portfolio.62 Let Di be the dollar holdings in our portfolio. The expected portfolio
+P&L P, volatility V and Sharpe ratio S are given by
+P =
+X
+N
+i=1
+Ei Di (342)
+V
+2 =
+X
+N
+i,j=1
+Cij Di Dj (343)
+S = P/V (344)
+Here Ei are the expected stock returns. Instead of the dollar holdings Di
+, it is more
+convenient to work with dimensionless holding weights (which are positive/negative
+for long/short positions)
+wi = Di/I (345)
+61 For some literature on using machine learning for predicting stock returns, see, e.g., [Adam
+and Lin, 2001], [Ang and Quek, 2006], [Chen, 2014], [Chen, Leung and Daouk, 2003], [Creamer
+and Freund, 2007], [Creamer and Freund, 2010], [Gestel et al, 2001], [Grudnitski and Osborn,
+1993], [Huang, Nakamori and Wang, 2005], [Huang and Tsai, 2009], [Huerta, Elkan and Corbacho,
+2013], [Kablan, 2009], [Kakushadze and Yu, 2016b], [Kakushadze and Yu, 2017c], [Kakushadze
+and Yu, 2018a], [Kara, Boyacioglu and Baykan, 2011], [Kim, 2003], [Kim, 2006], [Kim and Han,
+2000], [Kordos and Cwiok, 2011], [Kryzanowski, Galler and Wright, 1993], [Kumar and Thenmozhi,
+2001], [Liew and Mayster, 2018], [Lu, Lee and Chiu, 2009], [Milosevic, 2016], [Novak and Veluˇs¸cek,
+2016], [Ou and Wang, 2009], [Refenes, Zapranis and Francis, 1994], [Rodr´ıguez-Gonz´alez et al,
+2011], [Saad, Prokhorov and Wunsch, 1998], [Schumaker and Chen, 2010], [Subha and Nambi,
+2012], [Tay and Cao, 2001], [Teixeira and de Oliveira, 2010], [Tsai and Hsiao, 2010], [Vanstone and
+Finnie, 2009], [Yao and Tan, 2000], [Yao, Tan and Poh, 1999], [Yu, Wang and Lai, 2005].
+62 The sample covariance matrix based on a time series of historical returns is singular if T ≤
+N + 1, where T is the number of observations in the time series. Even if it is nonsingular, unless
+T  N, which is rarely (if ever) the case, the off-diagonal elements of the sample covariance matrix
+typically are unstable out-of-sample. Therefore, in practice, typically a model covariance matrix
+(which is positive-definite and should be sufficiently stable out-of-sample) is used (see below).
+55
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+where I is the total investment level. The holding weights satisfy the condition
+X
+N
+i=1
+|wi
+| = 1 (346)
+We have P = I × Pe, V = I × Ve and S = P /e Ve, where
+Pe =
+X
+N
+i=1
+Ei wi (347)
+Ve2 =
+X
+N
+i,j=1
+Cij wi wj (348)
+To determine the portfolio weights wi
+, often one requires that the Sharpe ratio
+[Sharpe, 1966], [Sharpe, 1994] be maximized:
+S → max (349)
+Assuming no additional conditions on wi (e.g., upper or lower bounds), the solution
+to Eq. (349) in the absence of trading costs is given by
+wi = γ
+X
+N
+j=1
+C
+−1
+ij Ej (350)
+where C
+−1
+is the inverse of C, and the normalization coefficient γ is determined
+from Eq. (346) (and γ > 0 so P >e 0). The weights given by Eq. (350) generically
+do not correspond to a dollar-neutral portfolio. To have a dollar-neutral portfolio,
+we need to maximize the Sharpe ratio subject to the dollar-neutrality constraint.
+3.18.1 Dollar-neutrality
+We can achieve dollar-neutrality as follows. In the absence of bounds, trading costs,
+etc., the Sharpe ratio is invariant under simultaneous rescalings of all holding weights
+wi → ζ wi
+, where ζ > 0. Due to this scale invariance, the Sharpe ratio maximization
+problem can be recast in terms of minimizing a quadratic objective function:
+g(w, λ) = λ
+2
+X
+N
+i,j=1
+Cij wi wj −
+X
+N
+i=1
+Ei wi (351)
+g(w, λ) → min (352)
+where λ > 0 is a parameter, and minimization is w.r.t. wi
+. The solution is given by
+wi =
+1
+λ
+X
+N
+j=1
+C
+−1
+ij Ej (353)
+56
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+and λ is fixed via Eq. (346). The objective function approach – which is the meanvariance optimization [Markowitz, 1952] – is convenient if we wish to impose linear
+homogeneous constraints (which do not spoil the aforesaid scale invariance) on wi
+,
+e.g., the dollar-neutrality constraint. We introduce a Lagrange multiplier µ:
+63
+g(w, µ, λ) = λ
+2
+X
+N
+i,j=1
+Cij wi wj −
+X
+N
+i=1
+Ei wi − µ
+X
+N
+i=1
+wi (354)
+g(w, µ, λ) → min (355)
+Minimization w.r.t. wi and µ now gives the following equations:
+λ
+X
+N
+j=1
+Cij wj = Ei + µ (356)
+X
+N
+i=1
+wi = 0 (357)
+So we have dollar-neutrality. The solution to Eqs. (356) and (357) is given by:
+wi =
+1
+λ
+"X
+N
+j=1
+C
+−1
+ij Ej −
+X
+N
+j=1
+C
+−1
+ij
+PN
+k,l=1 C
+−1
+kl El
+PN
+k,l=1 C
+−1
+kl #
+(358)
+By construction, wi satisfy the dollar-neutrality constraint (357), and λ is fixed via
+Eq. (346). The expected returns Ei can be based on mean-reversion, momentum,
+machine learning or other signals. Eq. (358) constructs a dollar-neutral portfolio
+with “risk management” built in. E.g., the weights wi (roughly) are suppressed by
+stock volatilities σi (where σ
+2
+i = Cii) assuming that on average |Ei
+| are of order σi
+.
+64
+The above implementation of the dollar-neutrality constraint via minimizing
+the quadratic objective function (354) is equivalent to imposing this constraint
+in Sharpe ratio maximization as no trading costs, position/trading bounds, nonlinear/inhomogeneous constraints, etc., are present. More generally Sharpe ratio
+maximization is not equivalent to minimizing a quadratic objective function (see,
+e.g., [Kakushadze, 2015b]), albeit in practice usually the latter approach is used.
+63 By introducing multiple Lagrange multipliers, we can have multiple linear homogeneous
+constraints (see, e.g., [Kakushadze, 2015b]).
+64 Typically, Cij is a multifactor risk model covariance matrix. For a general discussion, see,
+e.g., [Grinold and Kahn, 2000]. For explicit implementations (including source code), see, e.g.,
+[Kakushadze, 2015e], [Kakushadze and Yu, 2016a], [Kakushadze and Yu, 2017a]. For multifactor
+models, the weights are approximately neutral w.r.t. the columns of the factor loadings matrix.
+The exact neutrality is attained in the zero specific risk limit, where optimization reduces to a
+weighted regression (see, e.g., [Kakushadze, 2015b]).
+57
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.19 Strategy: Market-making
+Over-simplistically, this strategy amounts to capturing the bid-ask spread for a given
+stock and can be (again, over-simplistically) summarized as follows:
+Rule = (
+Buy at the bid
+Sell at the ask
+(359)
+In a market where most order flow is “dumb” (or uninformed), this strategy on
+average would work very well. However, in a market where most order flow is
+“smart” (or informed, i.e., “toxic”), this strategy, as stated, would lose money. This
+is because of adverse selection, where, precisely because most order flow is smart,
+most fills at the bid (ask) would be when the market is trading through it downward
+(upward), so these trades would lose money. Furthermore, most limit orders to buy
+(sell) at the bid (ask) would never be filled as the price would run away from them,
+i.e., increase (decrease). So, ideally, this strategy should be structured such that it
+captures dumb order flow and avoids smart order flow, which is not that simple.
+One approach is, at any given time, within a short time horizon, to stay on
+the “right” side of the market, i.e., to have a short-horizon signal indicating the
+direction of the market and place limit orders accordingly (to buy at the bid if the
+signal indicates a price increase, and to sell at the ask if the signal indicates a price
+decrease). If the signal were (magically) 100% correct, this would capture the dumb
+order flow assuming that the orders get filled. This is a big assumption as for this
+to be guaranteed, the trader would have to be #1 in the queue among many other
+market participants placing limit orders at the same price point. This is where high
+frequency trading comes in – it is essentially all about speed with which orders are
+placed, canceled, and cancel-replaced. Infrastructure and technology are key in this.
+Another possibility is to modulate the short-horizon signal with a longer-horizon
+signal (which can still be an intraday signal). The longer-horizon signal typically
+will have a higher cents-per-share65 than the shorter-horizon signal. Now certain
+trades can be profitable even with adverse selection, because they are established
+based on the longer-horizon signal. I.e., they “lose money” in the short term due to
+adverse selection (as the market trades through the corresponding limit orders), but
+they make money in a longer term. The market-making aspect of this is valuable
+as placing a passive limit order as opposed to an aggressive market or limit order
+saves money. On the other hand, in some cases, if the longer-horizon signal is strong
+enough and the shorter-horizon signal is in the same direction, a passive limit order
+would likely not get filled and it may make more sense to place an aggressive order.
+Such aggressive order flow is not dumb but smart, as it is based on nontrivial shortand long-horizon signals with a positive expected return.66 And speed still matters.
+65 “Cents-per-share” is defined as the realized P&L in cents (as opposed to dollars) divided by
+the total shares traded (which includes both establishing and liquidating trades). Note that the
+longer-horizon signal generally has a lower Sharpe ratio than the shorter-horizon signal.
+66 Dumb order flow can come from, e.g., uninformed retail traders. It can also come from ultra58
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+3.20 Strategy: Alpha combos
+With technological advances – hardware becoming cheaper and more powerful – it
+is now possible to data mine hundreds of thousands and even millions of alphas
+using machine learning methods. Here the term “alpha” – following common trader
+lingo – generally means any reasonable “expected return” that one may wish to
+trade on and is not necessarily the same as the “academic” alpha.67 In practice,
+often the detailed information about how alphas are constructed may not even be
+available, e.g., the only data available could be the position data, so “alpha” then is
+a set of instructions to achieve certain stock (or some other instrument) holdings by
+some times t1, t2, . . . Also, “machine learning” here refers to sophisticated methods
+that go beyond single-stock methods such as those discussed in Subsection 3.17
+and involve cross-sectional analyses based on price-volume as well as other types
+of data (e.g., market cap, some other fundamental data such as earnings, industry
+classification data, sentiment data, etc.) for a large number of stocks (typically, a
+few thousand and up). 101 explicit examples of such quantitative trading alphas
+are given in [Kakushadze, 2016].68 The flipside is that these ubiquitous alphas are
+faint, ephemeral and cannot be traded on their own as any profit on paper would be
+eaten away by trading costs. To mitigate this, one combines a large number of such
+alphas and trades the so-combined “mega-alpha”. Hence “alpha combo” strategies.
+This is not critical, but for definiteness let us assume that all alphas trade the
+same underlying instruments, even more concretely, the same universe of (say, 2,500)
+most liquid U.S. stocks. Each alpha produces desired holdings for this trading
+universe. What we need is the weights with which to combine individual alphas,
+whose number N can be large (in hundreds of thousands or even millions).69 Here
+long-horizon institutional traders (mutual funds, pension funds, etc.), whose outlook can be months
+or years and who are not concerned about a few pennies’ worth of difference in the execution price on
+short horizons (i.e., this is only “short-term dumb” order flow). For a more detailed discussion, see,
+e.g., [Kakushadze, 2015d], [Lo, 2008]. For some literature on high frequency trading and marketmaking, see, e.g., [Aldridge, 2013], [Anand and Venkataraman, 2016], [Avellaneda and Stoikov,
+2008], [Baron et al, 2014], [Benos et al, 2017], [Benos and Sagade, 2016], [Biais and Foucault,
+2014], [Biais, Foucault and Moinas, 2014], [Bowen, Hutchinson and O’Sullivan, 2010], [Bozdog et al,
+2011], [Brogaard and Garriott, 2018], [Brogaard et al, 2015], [Brogaard, Hendershott and Riordan,
+2014], [Budish, Cramton and Shim, 2015], [Carrion, 2013], [Carrion and Kolay, 2017], [Easley,
+L´opez de Prado and O’Hara, 2011], [Easley, L´opez de Prado and O’Hara, 2012], [Egginton, Van
+Ness and Van Ness, 2016], [Hagstr¨omer and Nord´en, 2013], [Hagstr¨omer, Nord´en and Zhang,
+2014], [Harris and Namvar, 2016], [Hasbrouck and Saar, 2013], [Hendershott, Jones and Menkveld,
+2011], [Hendershott, Jones and Menkveld, 2013], [Hendershott and Riordan, 2013], [Hirschey, 2018],
+[Holden and Jacobsen, 2014], [Jarrow and Protter, 2012], [Khandani and Lo, 2011], [Kirilenko et
+al, 2017], [Korajczyk and Murphy, 2017], [Kozhan and Tham, 2012], [Li et al, 2014], [Madhavan,
+2012], [Menkveld, 2013], [Menkveld, 2016], [Muthuswamy et al, 2011], [O’Hara, 2015], [Pagnotta
+and Philippon, 2012], [Riordan and Storkenmaier, 2012], [Van Kervel and Menkveld, 2017].
+67 By “academic” alpha we mean Jensen’s alpha [Jensen, 1968] or a similar performance index.
+68 This is a secretive field, so literature on this subject is very scarce. Also see, e.g., [Kakushadze
+and Tulchinsky, 2016], [Tulchinsky et al, 2015].
+69 Note that N here refers to the number of alphas, not the number of underlying stocks.
+59
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+is a procedure for fixing the alpha weights wi
+, i = 1, . . . , N [Kakushadze and Yu,
+2017b] (also see [Kakushadze and Yu, 2018a]):
+• 1) Start with a time series of realized alpha returns70 Ris, i = 1, . . . , N, s =
+1, . . . , M + 1.
+• 2) Calculate the serially demeaned returns Xis = Ris −
+1
+M+1
+PM+1
+s=1 Ris.
+• 3) Calculate sample variances of alpha returns71 σ
+2
+i =
+1
+M
+PM+1
+s=1 X2
+is.
+• 4) Calculate the normalized demeaned returns Yis = Xis/σi
+.
+• 5) Keep only the first M columns in Yis: s = 1, . . . , M.
+• 6) Cross-sectionally demean Yis: Λis = Yis −
+1
+N
+PN
+j=1 Yjs.
+• 7) Keep only the first M − 1 columns in Λis: s = 1, . . . , M − 1.
+• 8) Take the expected alpha returns Ei and normalize them: Eei = Ei/σi
+. One
+(but by far not the only) way of computing expected alpha returns is via d-day
+moving averages (note that d need not be the same as T):
+Ei =
+1
+d
+X
+d
+s=1
+Ris (360)
+• 9) Calculate the residuals εei of the regression (without the intercept and with
+unit weights) of Eei over Λis.
+• 10) Set the alpha portfolio weights to wi = η εei/σi
+.
+• 11) Set the normalization coefficient η such that PN
+i=1 |wi
+| = 1.
+3.21 A few comments
+We end this section with a few comments on some of the stock trading strategies discussed above. First, single-stock technical analysis strategies (i.e., those based solely
+on single-stock as opposed to cross-sectional data) such as those based on moving
+averages, support and resistance, channel and even single-stock KNN, are deemed
+“unscientific” by many professionals and academics. On the face of it, “fundamentally” speaking (not to be confused with fundamental analysis), there is no reason
+why, say, a short moving average crossing a long moving average should have any
+forecasting power.72 This is not to say that moving averages are “unscientific” or
+that they should not be used. After all, e.g., trend following/momentum strategies
+are based on moving averages, i.e., the expected returns are computed via moving
+averages. However, looking at a large cross-section of stocks brings in a statistical
+element into the game. Mean-reversion is expected to work because stocks are expected to be correlated if they belong to the same industries, etc. This relates back
+70 Here s = 1, . . . , T = M + 1 labels the times ts, where, as before, t1 corresponds to the most
+recent time (albeit the time direction is not crucial below), and the alpha returns are Ris = Ri(ts).
+Typically, the alpha returns are computed daily, from close to close.
+71 Their normalization is immaterial in what follows.
+72 Arguendo, the momentum effect may appear to provide a basis for such forecasting power in
+some cases. However, then one could argue, e.g., that these are momentum strategies in disguise.
+60
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+to fundamental analysis and – even more importantly – to the investors’ perception
+of how stock prices/returns “should” behave based on the companies’ fundamentals.
+However, here too it is important to keep in mind that the stock market – an imperfect man-made construct – is not governed by laws of nature the same way as, say,
+the motion of planets in the solar system is governed by fundamental laws of gravity
+(see, e.g., [Kakushadze, 2015d]). The markets behave the way they do because their
+participants behave in certain ways, which are sometimes irrational and certainly
+not always efficient. In this regard, the key difference between technical analysis
+strategies and statistical arbitrage strategies is that the latter are based on certain
+perceptions trickled down from longer holding horizons (fundamental analysis based
+strategies) to shorter horizons (statistical arbitrage) further enhanced by statistics,
+i.e., the fact that these strategies are based on a large number of stocks whose
+properties are further “stratified” according to some statistical and other features.
+This brings us to the second point relating to precisely these “stratifications” in
+the context of statistical arbitrage. Thus, in Subsection 3.10 we can use a binary
+industry classification matrix as the loadings matrix ΩiA. Such industry classifications are based on pertinent fundamental/economic data, such as companies’
+products and services, revenue sources, suppliers, competitors, partners, etc. They
+are essentially independent of the pricing data and, if well-built, tend to be rather
+stable out-of-sample as companies seldom jump industries. However, binary classifications can also be built based purely on pricing data, via clustering algorithms
+(see, e.g., [Kakushadze and Yu, 2016b]). Alternatively, the matrix ΩiA can be nonbinary and built using, say, principal components (see, e.g., [Kakushadze and Yu,
+2017a]). Some of the columns of ΩiA can be based on longer-horizon style risk factors such as value, growth, size, momentum, liquidity and volatility (see, e.g., [Ang
+et al, 2006], [Anson, 2013], [Asness, 1995], [Asness et al, 2001], [Asness, Porter and
+Stevens, 2000], [Banz, 1981], [Basu, 1977], [Fama and French, 1992], [Fama and
+French, 1993], [Haugen, 1995], [Jegadeesh and Titman, 1993], [Lakonishok, Shleifer
+and Vishny, 1994], [Liew and Vassalou, 2000], [P´astor and Stambaugh, 2003], [Scholes and Williams, 1977]),73 or shorter-horizon style factors [Kakushadze, 2015c].
+4 Exchange-traded funds (ETFs)
+4.1 Strategy: Sector momentum rotation
+Empirical evidence suggests that the momentum effect exists not only for individual
+stocks but also for sectors and industries.74 A sector momentum rotation strategy is
+73 For (il)liquidity related considerations, also see, e.g., [Amihud, 2002].
+74 For some pertinent literature, see, e.g., [Cavaglia and Vadim, 2002], [Conover et al, 2008],
+[Doeswijk and Vliet, 2011], [Dolvin and Kirby, 2011], [Gao and Ren, 2015], [Hong, Torous and
+Valkanov, 2007], [Levis and Liodakis, 1999], [Moskowitz and Grinblatt, 1999], [O’Neal, 2000],
+[Sefton and Scowcroft, 2005], [Simpson and Grossman, 2016], [Sorensen and Burke, 1986], [Stoval,
+1996], [Swinkels, 2002], [Szakmary and Zhou, 2015], [Wang et al, 2017].
+61
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+based on overweighing holdings in outperforming sectors and underweighing holdings
+in underperforming sectors, where the “outperformance” and “underperformance”
+are based on momentum during the past T-month formation period (which typically
+ranges from 6 to 12 months). ETFs concentrated in specific sectors/industries offer
+a simple way to implement sector/industry rotation without having to buy or sell
+a large number of underlying stocks. Similarly to Subsection 3.1, as a measure of
+sector/industry momentum, we can use the corresponding ETF’s cumulative return:
+R
+cum
+i
+(t) = Pi(t)
+Pi(t + T)
+− 1 (361)
+Here Pi(t) is the price of the ETF labeled by i. (As above, t + T is T months in the
+past w.r.t. t.) Right after time t, the trader can, e.g., buy the ETFs in the top decile
+by Rcum
+i
+(t) and hold the portfolio for a holding period (typically 1 to 3 months).
+Dollar-neutral strategies can also be constructed by, e.g., buying ETFs in the top
+decile and shorting ETFs in the bottom decile (as stocks, ETFs can be shorted).75
+4.1.1 Strategy: Sector momentum rotation with MA filter
+This is a variation/refinement of the sector momentum rotation strategy. An ETF
+in the top (bottom) decile is bought (sold) only if it passes an additional filter based
+on a moving average MA(T
+0
+) of this ETF’s price:
+Rule = (
+Buy top-decile ETFs only if P > MA(T
+0
+)
+Short bottom-decile ETFs only if P < MA(T
+0
+)
+(362)
+Here P is the ETF’s price at the time of the transaction, and MA(T
+0
+) is computed
+using daily prices (T
+0
+can but need not be equal T; e.g., T
+0
+can be 100 to 200 days).
+4.1.2 Strategy: Dual-momentum sector rotation
+In long-only strategies, to mitigate the risk of buying ETFs when the broad market
+is trending down, relative (i.e., cross-sectional) momentum of sector ETFs can be
+augmented by the absolute (i.e., time-series) momentum of, e.g., a broad market
+index ETF (see, e.g., [Antonacci, 2014], [Antonacci, 2017]).76 So, a long position
+based on the sector rotation signal (discussed above) is established only if the broad
+75 For some literature on ETFs, see, e.g., [Agapova, 2011a], [Aldridge, 2016], [Ben-David,
+Franzoni and Moussawi, 2017], [Bhattacharya et al, 2017], [Buetow and Henderson, 2012], [Clifford, Fulkerson and Jordan, 2014], [Hill, Nadig and Hougan, 2015], [Krause, Ehsani and Lien,
+2014], [Madhavan, 2016], [Madura and Ngo, 2008], [Nyaradi, 2010], [Oztekin et al, 2017].
+76 For some additional literature on relative momentum, absolute momentum and related topics,
+see, e.g., [Ahn, Conrad and Dittmar, 2003], [Bandarchuk and Hilscher, 2013], [Berk, Green and
+Naik, 1999], [Cooper, Gutierrez and Hameed, 2004], [Fama and French, 2008], [Hurst, Ooi and
+Pedersen, 2017], [Johnson, 2002], [Liu and Zhang, 2008], [Moskowitz, Ooi and Pedersen, 2012], [Sagi
+and Seasholes, 2007], [Schwert, 2003], [Zhang, 2006].
+62
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+market index has an upward trend; otherwise, the total available funds are invested
+into an ETF (e.g., gold or Treasury ETF) uncorrelated with the broad market index:
+Rule = (
+Buy top-decile ETFs if P > MA(T
+0
+)
+Buy an uncorrelated ETF if P ≤ MA(T
+0
+)
+(363)
+Here P is the broad market index ETF’s price at the time of the transaction, and
+MA(T
+0
+) is the moving average of this ETF’s price. Typically, T
+0
+is 100 to 200 days.
+4.2 Strategy: Alpha rotation
+This is the same as the sector momentum rotation strategy with the cumulative
+ETF returns Rcum
+i
+replaced by ETF alphas αi
+, which are the regression coefficients
+corresponding to the intercept in a serial regression of the ETF returns77 Ri(t) over,
+e.g., the 3 Fama-French factors MKT(t), SMB(t), HML(t) (see fn. 50):78
+Ri(t) = αi + β1,i MKT(t) + β2,i SMB(t) + β3,i HML(t) + i(t) (364)
+4.3 Strategy: R-squared
+Empirical studies for mutual funds (see, e.g., [Amihud and Goyenko, 2013], [Ferson and Mo, 2016]) and ETFs (see, e.g., [Garyn-Tal, 2014a], [Garyn-Tal, 2014b])
+suggest that augmenting alpha by an indicator based on R2 of a serial regression
+of the returns Ri(t) over multiple factors, e.g., the 3 Fama-French factors MKT(t),
+SMB(t), HML(t) plus Carhart’s momentum factor MOM(t) (see fn. 50), adds value
+in forecasting future returns. Thus, from the serial regression
+Ri(t) = αi + β1,i MKT(t) + β2,i SMB(t) + β3,i HML(t) + β4,i MOM(t) + i(t) (365)
+we can estimate αi (the regression coefficients corresponding to the intercept) and
+the regression R2
+, which is defined as (“SS” stands for “sum of squares”):
+R
+2 = 1 −
+SSres
+SStot
+(366)
+SSres =
+X
+N
+i=1
+
+2
+i
+(t) (367)
+SStot =
+X
+N
+i=1
+(Ri(t) − R(t))2
+(368)
+R(t) = 1
+N
+X
+N
+i=1
+Ri(t) (369)
+77 Typically, the estimation period is 1 year, and Ri(t) are daily or weekly returns.
+78 Alpha here is Jensen’s alpha defined for ETF returns as opposed to mutual fund returns
+as in [Jensen, 1968]. For some additional literature related to Jensen’s alpha, see, e.g., [Bollen
+and Busse, 2005], [Droms and Walker, 2001], [Elton, Gruber and Blake, 1996a], [Goetzmann and
+Ibbotson, 1994], [Grinblatt and Titman, 1992], [Jan and Hung, 2004].
+63
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+An R-squared strategy then amounts to overweighing ETFs with higher “selectivity”
+(defined as 1−R2
+[Amihud and Goyenko, 2013]) and underweighing ETFs with lower
+“selectivity”. E.g., one can first sort ETFs into quintiles by R2
+, and then sort ETFs
+in each such quintile into further sub-quintiles by alpha (resulting in 25 groups of
+ETFs). One can then, e.g., buy ETFs in the group corresponding to the lowest R2
+quintile and its highest alpha sub-quintile and sell ETFs in the group corresponding
+to the highest R2 quintile and its lowest alpha sub-quintile. Other variations are
+possible. Finally, the estimation period and the returns for R2
+can be the same
+as in the alpha rotation strategy (see Subsection 4.2 and fn. 77). However, longer
+estimation periods can be considered, especially if Ri(t) are monthly returns.79
+4.4 Strategy: Mean-reversion
+One way (among myriad others) to construct a mean-reversion strategy for ETFs is
+to use the Internal Bar Strength (IBS) based on the previous day’s close PC, high
+PH and low PL prices:80
+IBS = PC − PL
+PH − PL
+(370)
+Note that IBS ranges from 0 to 1.81 An ETF can be thought of as being “rich” if its
+IBS is close to 1, and as “cheap” if its IBS is close to 0. Upon sorting a universe of
+ETFs cross-sectionally by IBS, a dollar-neutral strategy can, e.g., be constructed by
+selling ETFs in the top decile and buying ETFs in the bottom decile. As with stock
+strategies discussed above, weights can be uniform for all long and all short ETFs,
+respectively, or nonuniform, e.g., based on historical ETF volatilities. Furthermore,
+mean-reversion strategies we discussed above for stocks can also be adapted to ETFs.
+4.5 Strategy: Leveraged ETFs (LETFs)
+A leveraged (inverse) ETF seeks to double or triple (the inverse of) the daily return of
+its underlying index.82 To maintain a daily leverage of 2× or 3×, LETFs rebalance
+79 Also, note that in [Amihud and Goyenko, 2013] R2
+is a measure of active management of a
+mutual fund. In [Garyn-Tal, 2014a], [Garyn-Tal, 2014b] R2
+is applied to actively managed ETFs.
+For some additional literature on actively managed ETFs, see, e.g., [Mackintosh, 2017], [Meziani,
+2015], [Rompotis, 2011a], [Rompotis, 2011b], [Schizas, 2014], [Sherrill and Upton, 2018].
+80 See, e.g., [Pagonidis, 2014]. For some additional related literature, see, e.g., [Brown, Davies
+and Ringgenberg, 2018], [Caginalp, DeSantis and Sayrak, 2014], [Chan, 2013], [Dunis, Laws and
+Rudy, 2013], [Lai, Tseng and Huang, 2016], [Levy and Lieberman, 2013], [Marshall, Nguyen and
+Visaltanachoti], [Rudy, Dunis and Laws, 2010], [Schizas, Thomakos and Wang, 2011], [Smith and
+Pantilei, 2015], [Yu and Webb, 2014].
+81 An equivalent but more symmetrical measure is Y = IBS − 1/2 = (PC − P∗)/(PH − PL),
+where P∗ = (PH + PL)/2. Note that Y ranges from 1/2 for PC = PH to −1/2 for PC = PL.
+82 For some literature on leveraged ETFs, see e.g., [Avellaneda and Zhang, 2010], [Bai, Bond
+and Hatch, 2015], [Charupat and Miu, 2011], [Cheng and Madhavan, 2010], [Ivanov and Lenkey,
+2014], [Jarrow, 2010], [Jiang and Peterburgsky, 2017], [Lu, Wang and Zhang, 2012], [Shum et al,
+2016], [Tang and Xu, 2013], [Trainor, 2010], [Tuzun, 2013].
+64
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+every day, which requires buying on the days when the market is up and selling
+when the market is down. This can result in a negative drift in the long term, which
+can be exploited by shorting both a leveraged ETF and a leveraged inverse ETF
+(both with the same leverage and for the same underlying index) and investing the
+proceeds into, e.g., a Treasury ETF. This strategy can have a significant downside
+risk in the short term if one of the short ETF legs has a sizable positive return.
+4.6 Strategy: Multi-asset trend following
+One allure of ETFs is their diversification power: ETFs allow to gain exposure
+to different sectors, countries, asset classes, factors, etc., by taking positions in a
+relatively small number of ETFs (as opposed to taking positions in a large number
+of underlying instruments, e.g., thousands of stocks). Here we focus on long-only
+trend-following portfolios. One needs to determine the weight wi of each ETF.
+One (but by far not the only) way to fix these weights is as follows. First, as
+in the sector momentum rotation strategy, we compute cumulative returns Rcum
+i
+(over some period T, e.g., 6-12 months). We only take ETFs with positive Rcum
+i
+.
+If desired, optionally, we can further filter out ETFs as in the sector momentum
+rotation strategy with an MA filter, by keeping only the ETFs whose last closing
+prices Pi are higher than their corresponding long-term moving averages MAi(T
+0
+)
+(typically, the MA length T
+0
+is 100 to 200 days). Now, instead of taking ETFs in
+the top decile by Rcum
+i
+(as in the sector momentum rotation strategy), we can assign
+nonzero weights wi to all remaining ETFs, whose number in this context is relatively
+small to begin with by design. The weights can, e.g., be assigned as follows:
+wi = γ1 R
+cum
+i
+(371)
+wi = γ2 R
+cum
+i
+/σi (372)
+wi = γ3 R
+cum
+i
+/σ2
+i
+(373)
+Here: σi
+is the historical volatility; and the overall normalization coefficients γ1, γ2, γ3
+in each case are computed based on the requirement that PN
+i=1 wi = 1 (where N
+is the number of ETFs in our portfolio after all filters are applied, i.e., those with
+nonzero weights). Thus, the weights in Eq. (371) are simply proportional to the
+past cumulative returns Rcum
+i
+, which are taken as the measure of momentum, so
+the expected returns are also given by (or, more precisely, proportional to) Rcum
+i
+.
+The issue with this weighting scheme is that it overweighs volatile ETFs as on
+average Rcum
+i ∝ σi
+. The weights in Eq. (372) mitigate this, while the weights
+in Eq. (373) actually optimize the Sharpe ratio of the ETF portfolio assuming a
+diagonal covariance matrix Cij = diag(σ
+2
+i
+) for the ETF returns, i.e., by ignoring
+their correlations.83 Imposing bounds wi ≤ w
+max
+i
+can further mitigate overweighing.
+83 For some literature on multi-asset portfolios, dynamic asset allocation and related topics, see,
+e.g., [Bekkers, Doeswijk and Lam, 2009], [Black and Litterman, 1992], [Detemple and Rindisbacher,
+2010], [Doeswijk, Lam and Swinkels, 2014], [Faber, 2015], [Faber, 2016], [Mladina, 2014], [Petre,
+65
+Electronic copy available at: https://ssrn.com/abstract=3247865
+Copyright 
+c 2018 Zura Kakushadze and Juan Andr´es Serur. All Rights
+Reserved.
+5 Fixed Income
+5.1 Generalities
+5.1.1 Zero-coupon bonds
+A promise of being paid $1 at the maturity time T can be regarded as an asset, which
+has some worth at time t before T. This asset is called a (zero-coupon) discount
+bond. Let its price at time 0 ≤ t ≤ T be P(t, T). Then P(T, T) = 1. The yield of a
+discount bond is defined as84
+R(t, T) = −
+ln(P(t, T))
+T − t
+(374)
+and has the meaning of an average interest rate over the period of time T − t. The
+higher the bond price at time t, the lower the yield R(t, T) and vice versa. Below
+we refer to a zero-coupon bond with a $1 principal and maturity T as a T-bond.
+5.1.2 Bonds with coupons
+In practice, a bond usually pays not only its principal at maturity T, but also
+makes smaller coupon payments before maturity. Consider a bond that makes n
+regular coupon payments at a fixed uncompounded rate k at times Ti = T0 + iδ,
+i = 1, 2, . . . , n, and also pays $1 principal at maturity T. The amount of each coupon
+payment is kδ, where δ is the payment period. This income stream is equivalent to
+owning one T-bond plus kδ units of each Ti-bond, i = 1, . . . , n. The price of the
+coupon bond at time t then is
+Pc(t, T) = P(t, T) + kδ Xn
+i=I(t)
+P(t, Ti) (375)
+where I(t) = min(i : t < Ti). At time t = T0 we have
+Pc(T0, T) = P(T0, T) + kδXn
+i=1
+P(T0, Ti) (376)
+If we desire the coupon bond to start with its face value (Pc(T0, T) = 1), then the
+corresponding coupon rate is given by
+k =
+1 − P(T0, T)
+δ
+Pn
+i=1 P(T0, Ti)
+(377)
+2015], [Sassetti and Tani, 2006], [Sharpe, 2009], [Sharpe and Perold, 2009], [Sørensen, 1999], [Tripathi and Garg, 2016], [Wu, 2003], [Zakamulin, 2014b].
+84 More precisely, this definition assumes continuous compounding. For periodic compounding
+at n discrete times Ti = T0 + iδ, i = 1, . . . , n, the yield between t = T0 and t = Tn is given by
+R(T0, Tn) = δ
+−1

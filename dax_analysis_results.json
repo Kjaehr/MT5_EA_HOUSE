@@ -1,0 +1,129 @@
+{
+  "basic_stats": {
+    "total_ticks": 2155550,
+    "trading_days": 71,
+    "avg_ticks_per_day": 30359.859154929578,
+    "price_range": {
+      "min": 23020.5,
+      "max": 24652.8,
+      "range": 1632.2999999999993
+    },
+    "spread_stats": {
+      "avg_spread": 0.8561311266266307,
+      "avg_spread_bps": 0.3567851528578338,
+      "min_spread": 0.19999999999708962,
+      "max_spread": 10.0
+    }
+  },
+  "session_stats": {
+    "Asian": {
+      "tick_count": 149567,
+      "avg_spread": 2.4367033503379028,
+      "volatility": 4.30434124903958,
+      "avg_move_size": 1.136232231924471,
+      "max_move": 501.7199999999975,
+      "activity_score": 169942.84623224736
+    },
+    "European": {
+      "tick_count": 1196611,
+      "avg_spread": 0.5529260386207508,
+      "volatility": 1.715026623242613,
+      "avg_move_size": 1.1942944651975185,
+      "max_move": 389.5,
+      "activity_score": 1429105.8942944678
+    },
+    "US_Overlap": {
+      "tick_count": 423728,
+      "avg_spread": 0.4958001831363723,
+      "volatility": 2.7074123771045686,
+      "avg_move_size": 1.1850756029235812,
+      "max_move": 546.7000000000007,
+      "activity_score": 502149.7150756032
+    },
+    "After_Hours": {
+      "tick_count": 809372,
+      "avg_spread": 1.012322714400831,
+      "volatility": 2.0319304487278282,
+      "avg_move_size": 1.112593977298422,
+      "max_move": 601.9400000000023,
+      "activity_score": 900502.4125939783
+    }
+  },
+  "best_session": "European",
+  "volatility_regimes": {
+    "low": {
+      "percentage": 32.998863399132475,
+      "avg_spread": 0.9595480854258653,
+      "avg_move": 1.050811133589295,
+      "tick_frequency": 914.285035316238
+    },
+    "medium": {
+      "percentage": 33.9988402031964,
+      "avg_spread": 0.7157543985088752,
+      "avg_move": 1.1314791461421192,
+      "tick_frequency": 914.2850353162379
+    },
+    "high": {
+      "percentage": 32.99881700726033,
+      "avg_spread": 0.8968675647330494,
+      "avg_move": 1.2591343317784645,
+      "tick_frequency": 914.285035316238
+    }
+  },
+  "vol_thresholds": {
+    "low": 0.34919148032050923,
+    "medium": 0.549321750857253,
+    "high": 105.34476826117411
+  },
+  "pattern_stats": {
+    "1min": {
+      "mean_return": -1.395293529415544e-05,
+      "volatility": 0.023971308391073833,
+      "avg_range": 6.230487860849955,
+      "avg_body_ratio": 0.5466072092107137,
+      "trend_persistence": 0.38356615786562476,
+      "mean_reversion_strength": 0.3947817490673289
+    },
+    "5min": {
+      "mean_return": -6.913433792577573e-05,
+      "volatility": 0.051602438129123136,
+      "avg_range": 15.617646752645932,
+      "avg_body_ratio": 0.4873457153527979,
+      "trend_persistence": 0.4494187055353115,
+      "mean_reversion_strength": 0.4549135288333623
+    },
+    "15min": {
+      "mean_return": -0.0002052055677326999,
+      "volatility": 0.09018326309676507,
+      "avg_range": 28.309854293148344,
+      "avg_body_ratio": 0.47136833824765123,
+      "trend_persistence": 0.4650355717508242,
+      "mean_reversion_strength": 0.4839493319451674
+    },
+    "30min": {
+      "mean_return": -0.0004080432031758814,
+      "volatility": 0.12474730668962197,
+      "avg_range": 40.499722412611405,
+      "avg_body_ratio": 0.4522864877656439,
+      "trend_persistence": 0.4715363511659808,
+      "mean_reversion_strength": 0.49074074074074076
+    },
+    "1h": {
+      "mean_return": -0.0007836643762615894,
+      "volatility": 0.1787918610069027,
+      "avg_range": 58.65167237834134,
+      "avg_body_ratio": 0.4543535937999847,
+      "trend_persistence": 0.4722031571722718,
+      "mean_reversion_strength": 0.5044612216884008
+    }
+  },
+  "recommendations": {
+    "spread_score": "EXCELLENT for scalping",
+    "volatility_strategy": "HYBRID strategy - mixed volatility regimes",
+    "momentum_strategy": "BALANCED (trend + reversion)",
+    "best_session": "European",
+    "suggested_stop": 20,
+    "suggested_target": 40,
+    "suggested_max_spread": 5
+  }
+}
